@@ -1,0 +1,213 @@
+# Codexium Magnus Requirements Specification v1.2 (Draft)
+
+## 1. Introduction
+
+### 1.1 Purpose
+This document defines the functional, non-functional, and data requirements for the **Codexium Magnus** system — an open-source, cross-platform digital library and archive viewer designed to host, search, and display modular “cartridges” of curated content. The system will support both literary and technical content, including but not limited to rulebooks, research papers, and archives.
+
+### 1.2 Scope
+Codexium Magnus (CM) provides a framework for viewing, searching, and managing digital collections stored as signed, read-only cartridges. The project aims to:
+- Deliver a secure, performant, and extensible desktop archive viewer.
+- Support cross-platform builds for Windows, macOS, and Linux.
+- Ensure theming, accessibility, and full-text search capabilities.
+- Maintain content separation to avoid licensing entanglement.
+- Support GPL-3 distribution with self-managed publisher key signing.
+
+### 1.3 References
+- ISO/IEC/IEEE 29148:2018 — Systems and Software Engineering: Life Cycle Processes – Requirements Engineering
+- GNU General Public License v3.0
+- SQLite Documentation
+- Avalonia UI Framework Documentation
+- Chromium Embedded Framework (CEF) Reference
+
+### 1.4 Definitions & Abbreviations
+| Term | Definition |
+|------|-------------|
+| **Cartridge** | A digitally signed, read-only content bundle (e.g., `.ruleset`) containing metadata, documents, and assets. |
+| **Corpus** | A named collection of related volumes within a cartridge. |
+| **Volume** | A logical grouping of works (e.g., a sourcebook, an anthology). |
+| **Viewer** | The end-user application used to browse and search cartridges. |
+| **Authoring Tool** | A companion app used to prepare and validate cartridge content. |
+| **Build CLI** | A command-line utility for compiling validated content into cartridges. |
+| **SA** | Signing Authority — for ecosystems that choose to delegate trust management. |
+| **GPL-3** | GNU General Public License, version 3. |
+| **FTS** | Full Text Search engine within SQLite. |
+
+---
+
+## 2. Overall Description
+
+### 2.1 Product Perspective
+Codexium Magnus is a standalone desktop application with optional companion tools. It provides read-only access to signed cartridges containing structured HTML/CSS content, searchable metadata, and assets.
+
+### 2.2 Product Functions
+- Display structured, themed HTML content via CEF.
+- Support light/dark/user-defined themes.
+- Perform full-text, wildcard, fuzzy, and case-sensitive search.
+- Verify cartridge signatures.
+- Enforce sandboxed execution of optional interactive scripts.
+- Manage user preferences, bookmarks, and zoom settings.
+- Provide cross-platform packaging and local storage.
+- Open external links in the operating system’s default browser.
+- **Print content reliably across supported platforms.**
+
+### 2.3 User Classes and Characteristics
+| User Class | Description |
+|-------------|-------------|
+| **General Reader** | Reads and searches cartridges. |
+| **Author** | Creates content and metadata using the Authoring Tool. |
+| **Publisher** | Signs cartridges and distributes verified versions. |
+| **Developer** | Contributes to the core open-source system. |
+
+### 2.4 Operating Environment
+- Platforms: Windows 10+, macOS 13+, Linux (GTK-compatible).
+- Framework: Avalonia UI + CEF.
+- Database: SQLite3 (FTS5 enabled).
+- Package format: Avalonia desktop bundle per OS.
+
+### 2.5 Design and Implementation Constraints
+- Must comply with GPL-3 license.
+- All code written in C# using .NET 8 LTS.
+- All content signing uses Ed25519.
+- No proprietary frameworks or paid dependencies.
+
+### 2.6 Assumptions and Dependencies
+- Users possess the right to access their cartridges.
+- Publishers self-manage their signing keys.
+- CEF provides sufficient HTML/CSS/JS feature parity across OSes.
+
+---
+
+## 3. Functional Requirements (FR)
+
+### [FR-1] Content Display
+The system shall render HTML content stored in cartridges using CEF.
+**Acceptance Tests**
+- [FR-AT-1.1] Verify a cartridge document displays identically across all supported OSes.
+- [FR-AT-1.2] Confirm removal of `<html>`, `<head>`, and `<body>` tags during normalization.
+- [FR-AT-1.3] Validate consistent theming and zoom across documents.
+
+### [FR-2] Theming System
+The system shall provide customizable, token-based themes.
+**Acceptance Tests**
+- [FR-AT-2.1] Verify users can switch between light/dark modes without reload.
+- [FR-AT-2.2] Confirm user-defined theme persistence between sessions.
+- [FR-AT-2.3] Ensure content color tokens inherit correctly.
+
+### [FR-3] Search Capabilities
+The system shall provide multi-mode full-text search.
+**Acceptance Tests**
+- [FR-AT-3.1] Validate Boolean (AND/OR/NOT) queries.
+- [FR-AT-3.2] Verify fuzzy and wildcard queries.
+- [FR-AT-3.3] Confirm case-sensitive toggle accuracy.
+
+### [FR-4] Cartridge Verification
+The viewer shall validate cartridge signatures using Ed25519.
+**Acceptance Tests**
+- [FR-AT-4.1] Validate known-good cartridges open without warnings.
+- [FR-AT-4.2] Confirm unsigned cartridges display a warning.
+- [FR-AT-4.3] Reject modified or tampered cartridges.
+
+### [FR-5] Authoring Tool
+An optional authoring tool shall allow content preview, validation, and export.
+**Acceptance Tests**
+- [FR-AT-5.1] Validate that YAML frontmatter auto-fills via UI forms.
+- [FR-AT-5.2] Confirm CEF preview matches viewer rendering.
+- [FR-AT-5.3] Ensure invalid content generates visible warnings.
+
+### [FR-6] Build CLI
+A command-line tool shall compile validated content into `.ruleset` cartridges.
+**Acceptance Tests**
+- [FR-AT-6.1] Validate manifest generation.
+- [FR-AT-6.2] Confirm proper hash/sig generation.
+- [FR-AT-6.3] Ensure build errors fail gracefully.
+
+### [FR-7] Preferences
+The system shall store preferences locally per user.
+**Acceptance Tests**
+- [FR-AT-7.1] Validate theme, font size, and zoom persistence.
+- [FR-AT-7.2] Confirm no sensitive data stored in plaintext.
+
+### [FR-8] Accessibility
+The viewer shall comply with WCAG 2.1 AA where applicable.
+**Acceptance Tests**
+- [FR-AT-8.1] Verify color contrast meets minimum ratios.
+- [FR-AT-8.2] Confirm full keyboard navigation support.
+
+### [FR-9] External Link Handling
+The system shall detect external URIs (e.g. `http://`, `https://`, `mailto:`) within rendered content and shall open them in the **operating system’s default browser or handler**, **not** in the embedded CEF window.
+**Acceptance Tests**
+- [FR-AT-9.1] When a user clicks an `https://` link in a document, the default OS browser opens the target URL.
+- [FR-AT-9.2] The embedded CEF does **not** navigate away from the current document when opening external links.
+- [FR-AT-9.3] External-link handling respects the cartridge’s trust level (e.g. for unverified cartridges the system **MAY** prompt before opening).
+- [FR-AT-9.4] Internal `cdoc://` or `#anchor` links continue to be handled inside CEF.
+
+### [FR-10] Printing Support
+The system shall provide reliable printing for any document rendered in the viewer.
+**Acceptance Tests**
+- **[FR-AT-10.1]** When the user invokes Print on a visible document, the system presents the operating system print dialog and prints the current document.
+- **[FR-AT-10.2]** For long/complex documents, the system shall first render to an off-screen/print surface (or PDF via CEF) and then pass the result to the OS print dialog, avoiding truncated or partially rendered output.
+- **[FR-AT-10.3]** Printed output shall apply the system’s print CSS (no background fills, legible text, proper margins).
+- **[FR-AT-10.4]** If the platform or policy requires, the system shall warn the user when printing from an unverified or unsigned cartridge.
+
+---
+
+## 4. Non-Functional Requirements (NFR)
+
+### [NFR-1] Performance
+- The viewer shall load any document in under 2 seconds on average hardware.
+- Search queries shall execute within 1 second on 1000+ documents.
+- Off-screen print rendering for a 50-page equivalent document shall complete in under 5 seconds on average hardware.
+
+### [NFR-2] Security
+- Cartridges are immutable post-signing.
+- Viewer enforces sandboxed script execution.
+- External links are mediated by the application before OS launch.
+- Printing from unverified sources may be gated or warned.
+
+### [NFR-3] Reliability
+- Viewer recovers gracefully from missing or corrupted cartridges.
+- Preferences file corruption does not prevent startup.
+
+### [NFR-4] Maintainability
+- Codebase shall maintain ≥80% test coverage.
+- All major components documented inline.
+
+### [NFR-5] Portability
+- Core UI logic is platform-agnostic.
+- Native installers for Windows, macOS, Linux.
+
+---
+
+## 5. External Interface Requirements (EIR)
+- **User Interface**: Avalonia UI with token-based theming.
+- **API**: Local IPC for communication between viewer and CLI.
+- **File Interface**: `.ruleset` archives (SQLite-based).
+- **External Link Interface**: OS-level URL launch (platform-specific).
+- **Print Interface**: OS-level print dialog invocation, with optional CEF PrintToPDF fallback.
+
+---
+
+## 6. System Data Requirements (SDR)
+- SQLite schema for cartridge metadata and search indices.
+- JSON manifest structure for cartridge-level metadata.
+- Local user preferences stored in JSON or SQLite.
+- Trusted publisher keys stored locally.
+- Print settings (last printer, last paper size) stored per user.
+
+---
+
+## 7. Appendices
+### 7.1 Licensing
+Codexium Magnus and its components are released under GPL-3.
+### 7.2 Signing Model
+Publishers self-manage Ed25519 keys; viewers verify using user-imported public keys.
+
+---
+
+## 8. Change Log (Newest First)
+| Version | Date | Author | Summary |
+|----------|------|--------|----------|
+| 1.2-draft | 2025-11-02 | System | Added [FR-10] Printing Support with off-screen/print-surface requirement and print CSS. |
+| 1.1-draft | 2025-11-02 | System | Added [FR-9] External Link Handling to require OS-level browser launch for external URIs. |
+| 1.0-draft | 2025-11-02 | System | Initial baseline draft. |
