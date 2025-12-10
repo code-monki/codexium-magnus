@@ -1,0 +1,296 @@
+include::attributes.adoc[]
+
+= Codexium Magnus — Implementation Plan
+:revnumber: 2.0
+:revdate: 2025-11-11
+:status: Draft
+
+== 1. Objectives
+
+1. Implement the application in the same structure as the Detailed Design v1.2.
+2. Use C++17/20 as the primary language with Qt 6 framework.
+3. Introduce Node.js only for Qt WebEngine/Playwright DOM testing (Chrome DevTools Protocol).
+4. Deliver a baseline that can run without external dependencies (static linking).
+5. Make reporting, not UI, the single source of truth for build/test/sanity output.
+
+== 2. Assumptions
+
+* Qt WebEngine is the standard rendering surface.
+* App is single user, but cartridges may be on shared storage → we design for local-first, shared-OK.
+* Config resolution order is fixed: Session → User Profile → Corpus → System.
+* All scripts/tools/tests should emit in (or be convertible to) the shared report format defined in DD §5.
+* UI spec is TBD; implementation stubs MAY expose placeholder controls.
+* Qt 6 is statically linked under GPL-3.
+
+== 3. Phase Overview
+
+1. Phase 1 – Foundations (must-have)
+   * P1.1 Shared Report Writer (C++)
+   * P1.2 Configuration Resolver (4-layer, C++)
+   * P1.3 Domain Models for Typography & Bibliography (C++)
+2. Phase 2 – Host & Rendering
+   * P2.1 Qt Widgets Shell
+   * P2.2 Qt WebEngine integration
+   * P2.3 ViewModel → Qt WebEngine binding
+3. Phase 3 – Feature Work (FR-11 / FR-12)
+   * P3.1 Typography application pipeline
+   * P3.2 Bibliography generation + view
+   * P3.3 ThemeManager implementation
+4. Phase 4 – Test Harnesses
+   * P4.1 Qt Test unit/integration tests
+   * P4.2 Qt Widgets in-proc UI tests
+   * P4.3 Playwright/Chrome DevTools Protocol tests against Qt WebEngine
+5. Phase 5 – Packaging / Ops
+   * P5.1 Build targets (per OS, static executables)
+   * P5.2 Test/run targets
+   * P5.3 Artifacts + logs
+
+== 4. Phase 1 – Foundations
+
+=== P1.1 Shared Report Writer (C++)
+
+**Goal**: match the DD idea of a single report format, but in C++.
+
+* Inputs: test results, pipeline/integration results, UI smoke tests.
+* Outputs:
+  * Markdown summary (counts, severities)
+  * JSON detail (per test/run item, via QJsonDocument)
+* Why first: everything else (tests, content, even Playwright runs) can dump into this and we don't get format sprawl.
+
+**Deliverables**:
+
+1. ReportSeverity enum (Fatal, Warning, Info)
+2. ReportEntry model
+3. ReportWriter service with: `addEntry(...)`, `writeMarkdown(...)`, `writeJson(...)`
+4. CLI sample that emits a fake run
+
+=== P1.2 Configuration Resolver (4-Layer)
+
+**Goal**: encode the resolution order from the DD so UI/Qt WebEngine/tests don't each re-implement it.
+
+* Layers: System → Corpus → User Profile → Session (session wins)
+* Responsibilities:
+  * Merge typography settings
+  * Merge bibliography settings
+  * Answer "effective config" for a given view
+
+**Deliverables**:
+
+1. `IConfigurationSource` interface (C++ abstract base class)
+2. `CompositeConfigurationResolver` that orders sources
+3. Unit tests (Qt Test) with table-driven cases:
+   * session only
+   * session + user
+   * corpus only
+   * system fallback
+
+=== P1.3 Domain Models
+
+**Goal**: freeze the shapes so the UI and Qt WebEngine bindings stop changing.
+
+* TypographyConfig
+  * baseFontFamily
+  * baseFontSize
+  * headingScale[]
+  * printOptions
+* BibliographyEntry
+  * normalizedAuthor
+  * title
+  * publication
+  * year
+  * sourceId / link
+* BibliographyConfig
+  * style (APA, CMS)
+  * sortBy
+  * groupBy
+
+== 5. Phase 2 – Host & Rendering
+
+=== P2.1 Qt Widgets Shell
+
+* Create main window, navigation frame, and a placeholder for the Qt WebEngine host.
+* Wire in theme selection from user profile layer (ThemeManager).
+* Add an "Issues / Reports" pane that can read the output from the report writer (even if it's fake data at first).
+
+=== P2.2 Qt WebEngine Integration
+
+* Embed Qt WebEngine as the single rendering engine (`QWebEngineView`).
+* Define a minimal message channel (C++ ↔ JavaScript) via `QWebChannel`:
+  * load article by id/slug
+  * apply typography
+  * show bibliography
+
+=== P2.3 ViewModel → Qt WebEngine Binding
+
+* Create a C++ viewmodel that:
+  * pulls effective config from the resolver
+  * serializes it (via QJsonDocument)
+  * sends it to the Qt WebEngine page as JSON (via `QWebEnginePage::runJavaScript` or `QWebChannel`)
+* On the JavaScript side, create a simple "apply config" routine (CSS vars / classes).
+
+== 6. Phase 3 – Feature Work
+
+=== P3.1 Typography (FR-11)
+
+* Implement server/model side first:
+  * take article
+  * attach effective typography
+  * emit JSON for Qt WebEngine to render
+* In Qt WebEngine:
+  * accept typography JSON
+  * set root CSS vars
+  * re-render body
+
+**Tests**: Qt Test unit → Qt WebEngine Playwright/Chrome DevTools Protocol
+
+=== P3.2 Bibliography (FR-12)
+
+* Implement bibliography generator in C++
+* Store result in cartridge/index model
+* Expose to UI
+* In Qt WebEngine:
+  * render list
+  * filter
+  * link back to article
+
+**Tests**: Qt Test unit → Qt Test integration → Qt WebEngine Playwright/Chrome DevTools Protocol
+
+=== P3.3 ThemeManager Implementation
+
+* Implement ThemeManager class (C++)
+* Create default theme stylesheets (light/sepia/dark)
+* Implement theme switching UI
+* Integrate with Qt Widgets stylesheet system
+* Integrate with Qt WebEngine CSS token injection
+* Add custom theme support (Phase 4)
+
+== 7. Phase 4 – Test Harnesses
+
+=== P4.1 Qt Test Unit/Integration
+
+* Qt Test framework project
+* Tests for:
+  * report writer
+  * config resolver
+  * typography merge
+  * bibliography normalize/sort
+
+=== P4.2 Qt Widgets In-Proc
+
+* Spin up window
+* Assert Qt WebEngine placeholder present
+* Assert theme applied
+
+=== P4.3 Playwright/Chrome DevTools Protocol for Qt WebEngine
+
+* Start app (test mode)
+* Attach Playwright to the Qt WebEngine debugging port (Chrome DevTools Protocol)
+* Assert:
+  * article content renders
+  * typography CSS vars are present
+  * bibliography view loads and is filterable
+
+== 8. Phase 5 – Packaging / Ops
+
+* Make / build script that does, in order:
+  1. build C++/Qt (CMake)
+  2. run Qt Test tests
+  3. run Playwright tests (optional flag if Node not present)
+  4. write reports to `/reports/YYYY-MM-DD/…`
+* Artifacts:
+  * app binaries (static executables)
+  * reports (Markdown + JSON)
+  * test logs
+
+== 9. Implementation Order (short list)
+
+1. Shared report writer (C++)
+2. Config resolver (4-layer, C++)
+3. Qt Widgets shell (with placeholder Qt WebEngine)
+4. Qt WebEngine integration (real)
+5. Typography pipeline (C++ → Qt WebEngine)
+6. Bibliography pipeline (C++ → Qt WebEngine)
+7. ThemeManager implementation
+8. Qt Test projects
+9. Playwright/Chrome DevTools Protocol tests
+10. Packaging/build targets (CMake, static linking)
+
+== 10. Dev Notes / Guardrails
+
+1. C++/Qt stays primary. Node.js exists only because Qt WebEngine testing (Playwright/Chrome DevTools Protocol) needs it.
+2. One HTML renderer only (Qt WebEngine). No second HTML host.
+3. Always use the 4-layer config (Session → User Profile → Corpus → System).
+4. Shared reporting is mandatory.
+5. Keep core rules in C++, not browser JS.
+6. Test where it lives.
+7. Keep path abstraction for local/shared cartridges.
+8. Static linking under GPL-3 for all Qt components.
+
+== 11. Development Environment Setup
+
+**Goal**: neutral setup, documented for Qt Creator and VS Code. Other IDEs can mirror.
+
+=== Prerequisites
+
+* Qt 6 SDK (static build, GPL-3) or build from source
+* CMake 3.20+
+* C++17 compiler (GCC, Clang, MSVC)
+* Node.js (current LTS) for Playwright/Qt WebEngine tests
+* Git
+
+=== Suggested Repo Layout
+
+* `/src` → Qt Widgets app, services, models
+* `/tests` → Qt Test unit + integration
+* `/tests/playwright` → Node-based Qt WebEngine tests
+* `/reports` → Markdown/JSON output
+* `/tools` → optional helpers
+
+=== Qt Creator Setup
+
+1. Open CMakeLists.txt as project
+2. Configure build with static linking
+3. Set up run configurations
+4. Configure Qt Test integration
+
+=== VS Code Setup
+
+1. Install C++ extension (Microsoft C/C++).
+2. Install CMake Tools extension.
+3. Install Qt Test explorer (if available).
+4. Install Playwright Test for VS Code.
+5. Open workspace with `/src`, `/tests`, `/tests/playwright`.
+6. Launch configs: run app, Qt Test tests, Playwright tests.
+
+=== First-Time Steps
+
+1. Build Qt 6 statically (GPL-3) or obtain pre-built
+2. `cmake -B build -S .`
+3. `cmake --build build`
+4. `cd tests/playwright && npm install && npx playwright install`
+5. `cd build && ctest` (or run Qt Test directly)
+6. `npx playwright test`
+7. Confirm both write to `/reports`
+
+=== CI Notes
+
+* CI must have Qt 6 (static), CMake, C++ compiler, and Node.js.
+* Run: `cmake --build build && ctest` → `npx playwright test` → publish `/reports`.
+* Skip Playwright only if Node unavailable.
+
+== 12. Change Log
+
+[cols="1,1,1,3"]
+|===
+|Version |Date |Author |Summary
+
+|2.0
+|2025-11-11
+|System
+|Updated for Qt 6 migration: Replaced all .NET/C#/Avalonia/CEF references with C++/Qt/Qt WebEngine, updated build system to CMake, updated test harnesses to Qt Test, added ThemeManager implementation phase.
+
+|1.0
+|2025-11-02
+|System
+|Initial implementation plan for Avalonia/CEF/.NET stack.
+|===

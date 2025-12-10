@@ -1,0 +1,236 @@
+include::attributes.adoc[]
+
+= Codexium Magnus – Project Rules
+:revnumber: 1.1
+:revdate: 2025-11-11
+:status: Approved
+
+== 1. Purpose
+
+These rules ensure consistency, correctness, and predictability across all development and documentation work for Codexium Magnus.
+
+== 2. Principles
+
+=== 2.1 Determinism Over Convenience
+
+All processes (build, content generation, document formatting) must produce deterministic output.
+
+=== 2.2 No Band-Aid Fixes
+
+Temporary workarounds are not permitted. Fix root causes.
+
+=== 2.3 Do Not Store Derivable Data
+
+Only store data that cannot be computed efficiently at runtime, unless storing it significantly improves performance.
+
+=== 2.4 Single Source of Truth
+
+Each artifact (requirements, design, code) must reflect a consistent and traceable state.
+
+== 3. Debugging Protocol (strict order)
+
+Debugging must follow this sequence:
+
+1. *Configs first*
+   Build configs, project configs, paths, module resolution.
+
+2. *Scripts second*
+   Build scripts, content processors, generators.
+
+3. *Source last*
+   Components, templates, views, logic.
+
+Skipping steps is not permitted.
+
+== 4. Documentation Rules
+
+=== 4.1 Requirements Documents
+
+Requirements documents use `FR-x` numbering.
+
+=== 4.2 Detailed Design Documents
+
+Detailed Design documents must not reuse `FR-x`. They use `DD-x.y` or their section numbering.
+
+=== 4.3 Numbering Preservation
+
+Each doc must preserve existing numbering and formatting — no renumbering unless the whole document is revised.
+
+=== 4.4 Large Updates
+
+ZIPs or large updates must be preceded by partial visible output in chat.
+
+=== 4.5 Documentation Format
+
+All documentation is maintained in AsciiDoc format with automated build tooling for HTML, PDF, and DOCX output.
+
+=== 4.6 Developer Journal
+
+Significant decisions and progress must be documented in the developer journal (`docs/journal/YYYY/YYYY-MM-DD.md`).
+
+== 5. Coding Rules
+
+=== 5.1 Comprehensive Passes
+
+Comprehensive passes over files. Avoid "touching the file every time a new idea appears."
+
+=== 5.2 Logging Rules
+
+All debug logging must be gated (e.g., `isDev` or equivalent config flag).
+
+=== 5.3 File Format
+
+* C++17/20 code using Qt 6 framework
+* CMake for build configuration
+* Qt-specific coding standards and conventions
+* No silent changes in code style or format
+
+=== 5.4 Performance Expectations
+
+Avoid O(n) operations when O(1) is feasible.
+
+=== 5.5 Qt-Specific Guidelines
+
+* Use Qt's memory management (parent-child relationships, QObject ownership)
+* Prefer Qt containers (`QList`, `QMap`, `QString`) over STL equivalents where appropriate
+* Use Qt's signals/slots for event-driven communication
+* Follow Qt naming conventions
+
+== 6. Build & Script Rules
+
+=== 6.1 Build Scripts
+
+Build scripts must:
+
+* provide clear input/output paths,
+* validate assumptions,
+* fail fast with context.
+
+=== 6.2 Sanity Checks
+
+Sanity checks (content, links, chunks) must:
+
+* run deterministically,
+* produce summary + detailed report,
+* never mutate data unless explicitly part of a repair script.
+
+=== 6.3 Makefiles
+
+Makefiles must use *tabs*, not spaces.
+
+=== 6.4 CMake Configuration
+
+* Use CMake 3.20+ minimum
+* Configure for static linking (`BUILD_SHARED_LIBS=OFF`)
+* Document Qt version and build configuration
+* Ensure reproducible builds
+
+=== 6.5 Qt Build Requirements
+
+* Qt 6 must be built statically with GPL-3 configuration
+* Document Qt static build process
+* Verify static executables (no external Qt DLLs)
+
+== 7. Test & Traceability Rules
+
+=== 7.1 Traceability Requirements
+
+Every Functional Requirement (FR-x) must be traceable to:
+
+* Architecture section
+* HLD section
+* Detailed Design section
+* One or more test cases
+
+=== 7.2 Test Trace Format
+
+Test traces follow this format:
+
+----
+FR-x → HLD-x → DD-x → TEST-x
+----
+
+=== 7.3 Test Framework
+
+* Use Qt Test framework for unit and integration tests
+* Use Playwright/Chrome DevTools Protocol for Qt WebEngine DOM tests
+* Maintain ≥80% test coverage (per NFR-4)
+
+== 8. UI/UX Rules
+
+=== 8.1 UI Conventions
+
+The viewer must not *invent* new UI conventions without explicit approval.
+
+=== 8.2 Accessibility
+
+Defaults must favor readability and accessibility (WCAG).
+
+=== 8.3 Persistence
+
+Typography and theme settings must persist across cartridges.
+
+=== 8.4 Styling
+
+* Use Qt Fusion style as base
+* Apply custom stylesheets for modern appearance
+* Support light/sepia/dark default themes
+* Support user-defined custom themes
+* Maintain flat design aesthetic
+
+== 9. Packaging / Cartridge Rules
+
+=== 9.1 Cartridge Format
+
+Cartridges are *read-only SQLite*.
+
+=== 9.2 Cartridge Signing
+
+Cartridges may be signed.
+
+=== 9.3 Unsafe Cartridges
+
+Unsafe cartridges must prompt/warn before opening.
+
+== 10. Completion Definition
+
+Work is considered complete only when:
+
+* design updated *and*
+* implementation matches design *and*
+* traceability to FR documented *and*
+* tests define expected behavior
+
+Not before.
+
+== 11. Developer Interaction Rules
+
+* Developer has worked with AI since the 1980s
+* Developer has 50+ years of software development experience
+* Interactions should occur at a formal, colleague level
+* Developer does not need cheerleading or affirmation
+* Developer is not subject to psychological manipulation
+* Developer is results-focused
+
+== 12. Expectations
+
+* Deliverables are reliably delivered when they are promised
+* If you don't have a document, don't guess. Ask for it to be uploaded
+* Let the developer drive the conversation
+
+== 13. Change Log
+
+[cols="1,1,1,3"]
+|===
+|Version |Date |Author |Summary
+
+|1.1
+|2025-11-11
+|System
+|Updated for Qt 6 migration: Updated section 5.3 (File Format) for C++/Qt, updated section 6 (Build Rules) for CMake/Qt, added Qt-specific guidelines, updated test framework references, added styling rules.
+
+|1.0
+|2025-11-02
+|System
+|Initial project rules document.
+|===
