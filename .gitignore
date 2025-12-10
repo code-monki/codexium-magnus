@@ -1,0 +1,22 @@
+# Build and cache
+bin/
+obj/
+packages/
+reports/
+TestResults/
+
+# Node
+node_modules/
+tests/playwright/node_modules/
+tests/playwright/.cache/
+tests/playwright/test-results/
+
+# IDEs
+.vscode/
+.idea/
+*.user
+*.suo
+
+# OS
+.DS_Store
+Thumbs.db

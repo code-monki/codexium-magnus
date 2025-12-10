@@ -152,6 +152,30 @@ The system shall provide reliable printing for any document rendered in the view
 
 ---
 
+### [FR-11] Typography Support
+The system shall provide user-adjustable typography that applies consistently to all viewer-rendered content.
+
+**Acceptance Tests**
+- **[FR-AT-11.1]** The system provides a default typography preset including base font, heading sizes, and spacing.
+- **[FR-AT-11.2]** The user can adjust base font size, line height, and paragraph spacing from the Settings view.
+- **[FR-AT-11.3]** The system ships with at least one bundled sans-serif font (Inter or Roboto), and cartridges may provide additional fonts via metadata.
+- **[FR-AT-11.4]** Typography remains readable and WCAG-conformant when switching between light/dark themes.
+- **[FR-AT-11.5]** Typography preferences persist across sessions and apply independent of which cartridge is loaded.
+
+---
+
+### [FR-12] Bibliography Support
+The system shall support programmatic generation of bibliographies, including APA and CMS formatting standards.
+
+**Acceptance Tests**
+- **[FR-AT-12.1]** Bibliography entries are generated from metadata stored in the cartridge, without requiring additional user entry.
+- **[FR-AT-12.2]** The system supports both APA and CMS ordering and formatting rules.
+- **[FR-AT-12.3]** Bibliographies rendered on screen and in print use the same citation format unless overridden by print layout rules.
+- **[FR-AT-12.4]** When printing multiple articles, the system can generate a grouped bibliography covering all referenced sources.
+- **[FR-AT-12.5]** Cartridges may include extra metadata fields (DOI, URL, ISSN, publisher), and the system incorporates them if the citation format allows.
+- 
+---
+
 ## 4. Non-Functional Requirements (NFR)
 
 ### [NFR-1] Performance

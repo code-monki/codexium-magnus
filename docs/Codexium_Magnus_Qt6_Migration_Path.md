@@ -1,0 +1,787 @@
+# Codexium Magnus — Qt 6 GPL-3 Migration Path
+
+|              |                                                                                                                                    |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **Version:** | 2.0                                                                                                                                |
+| **Date:**    | 2025-11-11                                                                                                                         |
+| **Status:**  | Draft                                                                                                                              |
+| **Scope:**   | Complete migration path from Avalonia + CEF to Qt 6 (GPL-3, statically linked) while preserving all functional requirements and architectural principles. |
+
+---
+
+## 1. Executive Summary
+
+This document outlines a **complete cutover migration** for Codexium Magnus from the current **Avalonia UI + CEF** stack to **Qt 6 (GPL-3, statically linked)**. The project is at PoC stage, enabling a "knife-edge cutover" approach. The migration preserves all functional requirements (FR-1 through FR-12), maintains the layered architecture, and ensures cross-platform compatibility across Windows, macOS, and Linux.
+
+### 1.1 Key Decisions
+
+1. **Qt 6 GPL-3** with **static linking** — fully compatible with project's GPL-3 license.
+2. **Qt WebEngine** replaces CEF (both are Chromium-based, ensuring feature parity).
+3. **Full C++/Qt migration** — complete rewrite, no hybrid approach.
+4. **Knife-edge cutover** — acceptable at PoC stage; no phased migration needed.
+
+### 1.2 Migration Scope
+
+- **UI Framework**: Avalonia → Qt Widgets or QML
+- **HTML Rendering**: CEF → Qt WebEngine
+- **Backend Services**: Full C++/Qt rewrite (no .NET retention)
+- **Build System**: .NET SDK → CMake + Qt build tools (static linking)
+- **Testing**: Port test harnesses to Qt Test framework
+- **Runtime**: Remove .NET dependency entirely
+
+---
+
+## 2. Licensing Analysis
+
+### 2.1 Qt 6 GPL-3 Static Linking
+
+**Conclusion**: Qt 6 can be **statically linked** when the application is licensed under GPL-3.
+
+**Rationale**:
+- Qt's GPL-3 license permits static linking when the entire application is GPL-3.
+- Codexium Magnus is GPL-3, satisfying this requirement.
+- Static linking simplifies deployment (single executable, no DLL dependencies).
+- No licensing conflicts exist.
+
+**Requirements**:
+- Build Qt from source with GPL-3 configuration (or use pre-built GPL-3 Qt).
+- Statically link all Qt libraries into the application.
+- Include Qt GPL-3 license text in distribution.
+- Provide complete source code (already required by GPL-3).
+- Document Qt version and build configuration.
+
+**Benefits of Static Linking**:
+- Single executable deployment (no separate Qt DLLs).
+- Simplified distribution and installation.
+- No runtime Qt version conflicts.
+- Smaller deployment footprint (only link what's used).
+
+### 2.2 License Compliance Checklist
+
+- [ ] Build Qt 6 from source with GPL-3 configuration (or use GPL-3 pre-built)
+- [ ] Configure CMake for static linking (`-DBUILD_SHARED_LIBS=OFF`)
+- [ ] Include Qt GPL-3 license text in distribution
+- [ ] Include all Qt source code (or link to official Qt sources)
+- [ ] Document Qt version and static build configuration
+- [ ] Ensure all dependencies are GPL-3 compatible
+- [ ] Update project license documentation
+
+---
+
+## 3. Technology Mapping
+
+### 3.1 Current Stack → Qt 6 Equivalent
+
+| Current Component | Qt 6 Equivalent | Notes |
+|-------------------|-----------------|-------|
+| **Avalonia UI** | Qt Widgets or QML | Widgets for traditional desktop UI; QML for declarative, modern UI |
+| **CEF (Chromium Embedded)** | Qt WebEngine | Both Chromium-based; similar API surface for HTML rendering |
+| **.NET 8/9 Runtime** | C++17/20 (full migration) | Complete C++/Qt rewrite — no .NET dependency |
+| **Avalonia XAML** | QML or Qt Widgets C++ | QML is declarative like XAML; Widgets is imperative |
+| **SQLite (via .NET)** | SQLite (via Qt SQL) | Qt provides native SQLite support |
+| **Ed25519 (via .NET)** | Qt or third-party C++ library | Multiple C++ Ed25519 implementations available |
+
+### 3.2 Component-by-Component Analysis
+
+#### 3.2.1 UI Shell (Avalonia → Qt)
+
+**Option A: Qt Widgets (Recommended for initial migration)**
+- **Pros**: Mature, stable, excellent cross-platform support, familiar C++ patterns
+- **Cons**: More verbose than QML, less modern appearance
+- **Migration effort**: Medium
+- **Best for**: Rapid migration with minimal UI redesign
+
+**Option B: QML**
+- **Pros**: Modern, declarative, excellent theming, better performance for complex UIs
+- **Cons**: Requires learning QML/JavaScript, more significant rewrite
+- **Migration effort**: High
+- **Best for**: Long-term modern UI with rich animations and theming
+
+**Recommendation**: Start with Qt Widgets for Phase 1, evaluate QML for Phase 2+.
+
+#### 3.2.2 HTML Rendering (CEF → Qt WebEngine)
+
+**Feature Parity Assessment**:
+
+| Feature | CEF | Qt WebEngine | Status |
+|---------|-----|--------------|--------|
+| HTML5/CSS3 rendering | ✅ | ✅ | Equivalent |
+| JavaScript execution | ✅ | ✅ | Equivalent |
+| Custom URI schemes | ✅ | ✅ | Supported via `QWebEngineUrlSchemeHandler` |
+| Link interception | ✅ | ✅ | `QWebEnginePage::acceptNavigationRequest` |
+| Print to PDF | ✅ | ✅ | `QWebEnginePage::printToPdf` |
+| Off-screen rendering | ✅ | ✅ | `QWebEngineView` with hidden widget |
+| Message passing (C# ↔ JS) | ✅ | ✅ | `QWebChannel` or `QWebEnginePage::runJavaScript` |
+
+**Migration Notes**:
+- Qt WebEngine API is cleaner and more Qt-idiomatic than CEF.
+- Print support is native via `QPrintDialog` integration.
+- External link handling is straightforward with `QDesktopServices::openUrl`.
+
+#### 3.2.3 Backend Services (.NET → C++/Qt)
+
+**Decision**: **Full C++/Qt Migration** (knife-edge cutover)
+
+**Rationale**:
+- Project is at PoC stage — acceptable to rewrite completely.
+- Eliminates .NET runtime dependency.
+- Native Qt integration for all components.
+- Single language stack simplifies development and deployment.
+- Better performance (no interop overhead).
+
+**Migration Scope**:
+- **Configuration Resolver**: Rewrite in C++ using Qt's QSettings and JSON support.
+- **Report Writer**: Rewrite using Qt's file I/O and JSON libraries.
+- **Domain Models**: Port to C++ classes (TypographyConfig, BibliographyConfig).
+- **Storage Layer**: Use Qt SQL (native SQLite support).
+- **Ed25519**: Use C++ library (e.g., libsodium, tweetnacl, or dedicated Ed25519 C++ implementation).
+
+**Migration Effort**: High, but acceptable for PoC stage cutover.
+
+---
+
+## 4. Architecture Preservation Strategy
+
+### 4.1 Layered Architecture Mapping
+
+The existing 5-layer architecture maps cleanly to Qt:
+
+| Layer | Current (Avalonia) | Qt 6 Equivalent |
+|-------|-------------------|-----------------|
+| **Presentation** | Avalonia UI, XAML | Qt Widgets/QML, UI files |
+| **Integration** | CEF host, bridges | Qt WebEngine, QWebChannel |
+| **Application** | ViewModels, navigation | Qt Models/Views, QAbstractItemModel |
+| **Domain** | Cartridge reader, schema | C++ domain classes (or .NET via interop) |
+| **Infrastructure** | SQLite, file I/O | Qt SQL, QFile, QSettings |
+
+### 4.2 Service Interface Preservation
+
+All service interfaces (`ICartridgeService`, `ISearchService`, `IThemeService`, `ILinkService`, `IPrintService`) can be preserved as:
+
+1. **C++ abstract base classes** (if full C++ migration)
+2. **Qt interfaces** (QObject-based signals/slots)
+3. **.NET interfaces** (if hybrid approach, accessed via interop)
+
+**Recommendation**: Define service contracts in a language-agnostic way (IDL or protocol buffers) or maintain C++ abstract interfaces that can be implemented in either C++ or .NET.
+
+### 4.3 Component Responsibilities (Unchanged)
+
+- **Viewer Shell**: Window management, pane layout, command routing
+- **Rendering Host**: HTML rendering, theme injection, link/print interception
+- **Content Subsystem**: Cartridge I/O, manifest parsing, document serving
+- **Search Subsystem**: FTS5 queries, result shaping
+- **Security Subsystem**: Ed25519 verification, trust classification
+- **Authoring Subsystem**: Content editor, preview, validation
+- **Build/CLI Subsystem**: Cartridge construction, signing
+
+---
+
+## 5. Migration Strategy (Knife-Edge Cutover)
+
+Given the PoC stage of the project, a **complete cutover** approach is recommended rather than a phased migration. This section outlines the implementation order, but all work proceeds in parallel where possible.
+
+### Phase 1: Foundation & Build System (2-3 weeks)
+
+**Objectives**:
+- Build Qt 6 from source with GPL-3 static configuration (or obtain GPL-3 pre-built)
+- Establish CMake build system with static linking
+- Create minimal Qt Widgets shell
+- Integrate Qt WebEngine for HTML rendering
+- Verify cross-platform static compilation
+
+**Deliverables**:
+1. Qt 6 static build (GPL-3) for all platforms
+2. CMake project structure with static linking configuration
+3. Minimal MainWindow with WebEngine view
+4. Basic message passing (C++ ↔ JavaScript) via QWebChannel
+5. Cross-platform build scripts (Windows, macOS, Linux)
+6. Documentation: Qt static build and development setup
+
+**Success Criteria**:
+- Application compiles statically on all three platforms
+- Single executable (no external Qt DLLs)
+- WebEngine renders HTML content
+- Basic message passing works
+
+**Risks**:
+- Qt static build complexity (especially WebEngine)
+- Build system learning curve (CMake)
+- Platform-specific static linking issues
+
+---
+
+### Phase 2: Core Services & Domain Layer (3-4 weeks)
+
+**Objectives**:
+- Port domain models to C++ (TypographyConfig, BibliographyConfig, etc.)
+- Implement configuration resolver in C++ (4-layer: System → Corpus → User → Session)
+- Implement report writer using Qt file I/O
+- Implement storage layer using Qt SQL
+- Implement cartridge reader (SQLite via Qt SQL)
+
+**Deliverables**:
+1. C++ domain model classes
+2. Configuration resolver (C++)
+3. Report writer (C++)
+4. Storage service (Qt SQL)
+5. Cartridge service (SQLite reader)
+
+**Success Criteria**:
+- All domain models ported and tested
+- Configuration resolution matches .NET behavior
+- Cartridge loading works
+- Storage layer functional
+
+**Note**: This phase can proceed in parallel with Phase 3.
+
+---
+
+### Phase 3: UI Shell & Integration (4-5 weeks)
+
+**Objectives**:
+- Migrate MainWindow layout to Qt Widgets
+- Implement navigation pane, search pane, document view
+- Port theme system to Qt stylesheets
+- Integrate services with UI
+- Implement search service (FTS5 via Qt SQL)
+
+**Deliverables**:
+1. Qt Widgets-based MainWindow with split panes
+2. Navigation tree widget (QTreeView + QAbstractItemModel)
+3. Search interface (QLineEdit + results list)
+4. Theme service (Qt stylesheets)
+5. Link service (QDesktopServices for external links)
+6. Print service (QPrintDialog + printToPdf)
+7. Search service (FTS5 queries)
+
+**Success Criteria**:
+- UI matches current Avalonia layout
+- Navigation tree populates from cartridge
+- Search functional (FTS5)
+- Theme switching works
+- External links open in OS browser
+- Print dialog works
+
+**Dependencies**:
+- Phase 1 complete
+- Phase 2 complete (services available)
+
+---
+
+### Phase 4: Feature Completion & Security (3-4 weeks)
+
+**Objectives**:
+- Complete all functional requirements:
+  - FR-1: Content display (WebEngine) ✅ (Phase 1)
+  - FR-2: Theming (Qt stylesheets) ✅ (Phase 3)
+  - FR-3: Search (FTS5 via Qt SQL) ✅ (Phase 3)
+  - FR-4: Cartridge verification (Ed25519 C++ library)
+  - FR-7: Preferences (QSettings)
+  - FR-9: External link handling (QDesktopServices) ✅ (Phase 3)
+  - FR-10: Printing (QPrintDialog + printToPdf) ✅ (Phase 3)
+  - FR-11: Typography (CSS injection via WebEngine)
+  - FR-12: Bibliography (C++ implementation)
+- Implement Ed25519 signature verification
+- Port Authoring Tool (if applicable)
+- Port Build/CLI (if applicable)
+
+**Deliverables**:
+1. Ed25519 verification service (C++ library integration)
+2. Typography CSS injection pipeline
+3. Bibliography generation and formatting
+4. Preferences persistence (QSettings)
+5. Authoring Tool (if in scope)
+6. Build/CLI tool (if in scope)
+7. Updated documentation
+
+**Success Criteria**:
+- All FRs implemented
+- Ed25519 verification working
+- Typography and bibliography functional
+- Feature parity with Avalonia version
+
+---
+
+### Phase 5: Testing & Deployment (3-4 weeks)
+
+**Objectives**:
+- Port test harnesses to Qt Test framework:
+  - Unit tests (Qt Test)
+  - Integration tests (Qt Test)
+  - UI tests (Qt Test with QTest::mouseClick, etc.)
+  - WebEngine DOM tests (Chrome DevTools Protocol or Qt Test)
+- Performance optimization
+- Cross-platform static build verification
+- Documentation updates
+
+**Deliverables**:
+1. Complete test suite (Qt Test)
+2. Performance benchmarks
+3. Static build packages for all platforms (single executables)
+4. Updated user documentation
+5. Developer guide
+
+**Success Criteria**:
+- ≥80% test coverage (per NFR-4)
+- All platforms tested and working
+- Static executables verified (no external dependencies)
+- Performance targets met
+- Documentation complete
+
+**Total Estimated Timeline**: 15-20 weeks (phases can overlap significantly)
+
+---
+
+## 6. Technical Implementation Details
+
+### 6.1 Qt 6 Static Build Configuration
+
+**Critical Requirement**: Qt 6 must be built statically with GPL-3 configuration.
+
+**Option A: Build Qt from Source (Recommended for control)**
+
+```bash
+# Download Qt 6 source
+git clone https://code.qt.io/qt/qt5.git qt6
+cd qt6
+git checkout 6.7  # or latest stable 6.x
+
+# Configure for static build
+./configure \
+    -prefix /opt/qt6-static \
+    -static \
+    -release \
+    -opensource \
+    -confirm-license \
+    -nomake examples \
+    -nomake tests \
+    -skip qtwebengine  # Build separately (see below)
+
+# Build Qt base
+cmake --build . --parallel
+
+# Build Qt WebEngine separately (requires more setup)
+# WebEngine has additional dependencies (Python, Node.js, etc.)
+cd qtwebengine
+# Follow Qt WebEngine build instructions for static linking
+```
+
+**Option B: Use Pre-built GPL-3 Static Qt (if available)**
+- Check Qt's official distribution channels
+- Verify GPL-3 license and static linking
+- May require custom build if not available
+
+**Platform-Specific Notes**:
+- **Windows**: Requires Visual Studio or MinGW; WebEngine build is complex
+- **macOS**: Requires Xcode; may need to disable code signing for static builds
+- **Linux**: Most straightforward; ensure all dependencies installed
+
+**Verification**:
+```bash
+# After build, verify static linking
+ldd /opt/qt6-static/bin/qmake  # Should show minimal dependencies
+file /opt/qt6-static/bin/qmake  # Should indicate static binary
+```
+
+### 6.2 Build System Migration
+
+**Current**: .NET SDK (`dotnet build`)
+
+**Target**: CMake + Qt build tools
+
+**CMake Structure (Static Linking)**:
+```cmake
+cmake_minimum_required(VERSION 3.20)
+project(CodexiumMagnus VERSION 1.0.0 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Static linking configuration
+set(BUILD_SHARED_LIBS OFF)
+set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".lib")
+
+# Find Qt 6 (must be built statically)
+find_package(Qt6 REQUIRED COMPONENTS 
+    Core 
+    Widgets 
+    WebEngine 
+    WebEngineWidgets 
+    Sql
+    Network
+    PrintSupport
+)
+
+# Ensure static linking
+set_target_properties(Qt6::Core Qt6::Widgets Qt6::WebEngine 
+    Qt6::WebEngineWidgets Qt6::Sql Qt6::Network Qt6::PrintSupport
+    PROPERTIES
+    INTERFACE_LINK_LIBRARIES ""
+)
+
+qt6_standard_project_setup()
+
+qt6_add_executable(codexium-magnus
+    src/main.cpp
+    src/MainWindow.cpp
+    # ... other sources
+)
+
+# Link statically
+target_link_libraries(codexium-magnus PRIVATE
+    Qt6::Core
+    Qt6::Widgets
+    Qt6::WebEngine
+    Qt6::WebEngineWidgets
+    Qt6::Sql
+    Qt6::Network
+    Qt6::PrintSupport
+)
+
+# Platform-specific static linking flags
+if(WIN32)
+    set_target_properties(codexium-magnus PROPERTIES
+        WIN32_EXECUTABLE TRUE
+        LINK_FLAGS "/SUBSYSTEM:WINDOWS"
+    )
+elseif(APPLE)
+    set_target_properties(codexium-magnus PROPERTIES
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_BUNDLE_NAME "Codexium Magnus"
+    )
+endif()
+```
+
+**Note**: Qt must be built from source with static configuration, or use a pre-built static Qt 6 GPL-3 distribution.
+
+### 6.2 Qt WebEngine Integration Pattern
+
+**Replacing CEF Bridge**:
+
+```cpp
+// C++ side
+class DocumentView : public QWidget {
+    Q_OBJECT
+public:
+    DocumentView(QWidget* parent = nullptr);
+    void loadHtml(const QString& html, const QUrl& baseUrl);
+    void applyTypography(const TypographyConfig& config);
+    
+signals:
+    void linkClicked(const QUrl& url);
+    void printRequested();
+    
+private:
+    QWebEngineView* m_webView;
+    QWebChannel* m_channel;
+};
+
+// JavaScript side (injected into WebEngine)
+class ConfigBridge : public QObject {
+    Q_OBJECT
+public slots:
+    void updateConfig(const QJsonObject& config);
+};
+```
+
+**Message Passing** (replacing CEF's `Send()`):
+```cpp
+// C++ → JavaScript
+m_webView->page()->runJavaScript(
+    QString("window.applyConfig(%1);").arg(jsonString)
+);
+
+// JavaScript → C++ (via QWebChannel)
+// Register bridge object, call from JS
+```
+
+### 6.3 External Link Handling
+
+**Qt Native Implementation**:
+```cpp
+void DocumentView::onNavigationRequested(
+    const QUrl& url,
+    QWebEnginePage::NavigationType type,
+    bool isMainFrame
+) {
+    if (isExternal(url)) {
+        QDesktopServices::openUrl(url);
+        // Cancel navigation in WebEngine
+        return false;
+    }
+    return true; // Allow internal navigation
+}
+```
+
+### 6.4 Printing Implementation
+
+**Visible Print Path**:
+```cpp
+void PrintService::printVisible(QWebEngineView* view) {
+    QPrintDialog dialog;
+    if (dialog.exec() == QDialog::Accepted) {
+        view->page()->print(dialog.printer(), [](bool success) {
+            // Handle completion
+        });
+    }
+}
+```
+
+**Off-screen Print Path**:
+```cpp
+void PrintService::printOffscreen(const DocumentContext& ctx) {
+    // Create hidden WebEngine view
+    QWebEngineView* hiddenView = new QWebEngineView();
+    hiddenView->setHtml(ctx.html);
+    
+    // Render to PDF
+    hiddenView->page()->printToPdf([this](const QByteArray& pdfData) {
+        // Open PDF in OS print dialog
+        QPrintDialog dialog;
+        // ... configure and print PDF
+    });
+}
+```
+
+### 6.5 C++ Library Dependencies
+
+**Required C++ Libraries**:
+
+1. **Ed25519 Signature Verification**:
+   - **Option A**: libsodium (https://github.com/jedisct1/libsodium) — comprehensive crypto library
+   - **Option B**: tweetnacl (https://tweetnacl.cr.yp.to/) — minimal, portable
+   - **Option C**: ed25519-donna (https://github.com/floodyberry/ed25519-donna) — optimized
+   - **Recommendation**: libsodium (well-maintained, comprehensive, GPL-compatible)
+
+2. **JSON Parsing**: Qt provides `QJsonDocument`, `QJsonObject`, `QJsonArray` — no external dependency needed.
+
+3. **SQLite**: Qt SQL module includes SQLite driver — no external dependency needed.
+
+4. **Build Tools**:
+   - CMake 3.20+
+   - C++17 compiler (GCC, Clang, MSVC)
+   - Qt 6 source or pre-built static GPL-3 distribution
+
+**Integration Example (libsodium)**:
+```cmake
+# Find or include libsodium
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBSODIUM REQUIRED libsodium)
+
+target_link_libraries(codexium-magnus PRIVATE
+    ${LIBSODIUM_LIBRARIES}
+)
+target_include_directories(codexium-magnus PRIVATE
+    ${LIBSODIUM_INCLUDE_DIRS}
+)
+```
+
+---
+
+## 7. Risk Assessment
+
+### 7.1 High-Risk Areas
+
+| Risk | Impact | Probability | Mitigation |
+|------|--------|-------------|------------|
+| **Qt WebEngine static build complexity** | High | Medium | Early POC, document static build process |
+| **Complete rewrite effort** | High | High | Acceptable at PoC stage; parallel development possible |
+| **Loss of existing .NET code** | Medium | High | Document .NET implementation for reference during rewrite |
+| **Platform-specific Qt bugs** | Medium | Low | Early cross-platform testing, Qt community support |
+| **Team Qt learning curve** | Medium | High | Training, pair programming, Qt documentation |
+
+### 7.2 Medium-Risk Areas
+
+| Risk | Impact | Probability | Mitigation |
+|------|--------|-------------|------------|
+| **QML vs. Widgets decision delay** | Low | Medium | Start with Widgets, evaluate QML later |
+| **Test harness migration complexity** | Medium | Medium | Port to Qt Test framework completely |
+| **Build system complexity (CMake)** | Low | Medium | Use Qt Creator or VS Code with CMake tools |
+
+### 7.3 Low-Risk Areas
+
+| Risk | Impact | Probability | Mitigation |
+|------|--------|-------------|------------|
+| **Licensing compliance** | Low | Low | Documented, straightforward |
+| **Feature parity** | Low | Low | Qt WebEngine ≈ CEF capabilities |
+| **SQLite migration** | Low | Low | Qt SQL is mature and well-documented |
+
+---
+
+## 8. Testing Strategy
+
+### 8.1 Test Harness Migration
+
+**Current Test Structure**:
+- .NET unit tests (xUnit)
+- Playwright tests (Node.js) for CEF DOM
+
+**Qt Migration Strategy**:
+
+1. **Unit Tests**:
+   - Port all tests to Qt Test framework (C++)
+   - Use Qt Test's QCOMPARE, QVERIFY macros
+   - **Recommendation**: Complete port to Qt Test
+
+2. **Integration Tests**:
+   - Port to Qt Test or keep .NET integration tests
+   - Test service interfaces end-to-end
+
+3. **UI Tests**:
+   - **Option A**: Qt Test with `QTest::mouseClick`, `QTest::keyClick`
+   - **Option B**: Squish, Froglogic (commercial)
+   - **Option C**: Adapt Playwright for Qt WebEngine (if possible)
+   - **Recommendation**: Start with Qt Test, evaluate Playwright adaptation
+
+4. **WebEngine DOM Tests**:
+   - Adapt Playwright to connect to Qt WebEngine's debugging port
+   - Or use Qt WebEngine's built-in DevTools protocol
+   - **Note**: Qt WebEngine supports Chrome DevTools Protocol (CDP)
+
+### 8.2 Test Coverage Requirements
+
+- Maintain ≥80% coverage (per NFR-4)
+- All FR acceptance tests must pass
+- Cross-platform test matrix: Windows, macOS, Linux
+
+---
+
+## 9. Rollback Plan
+
+### 9.1 Branch Strategy
+
+- **Main branch**: Current Avalonia version (reference during migration)
+- **Feature branch**: `qt6-migration` for complete Qt rewrite
+- **Merge strategy**: Complete cutover — merge when all phases complete and validated
+- **Archive**: Preserve Avalonia branch as `archive/avalonia-poc` for reference
+
+### 9.2 Rollback Triggers
+
+- Critical bugs that block core functionality
+- Performance degradation >20% vs. Avalonia version
+- Platform support regression (one platform broken)
+- Timeline slip >50% of estimated duration
+
+### 9.3 Rollback Procedure
+
+1. Freeze Qt migration branch
+2. Document issues and lessons learned
+3. Return to Avalonia main branch
+4. Evaluate alternative approaches (e.g., Avalonia improvements, CEF updates)
+
+---
+
+## 10. Success Metrics
+
+### 10.1 Technical Metrics
+
+- [ ] All FRs implemented and passing acceptance tests
+- [ ] Test coverage ≥80%
+- [ ] Performance: document load <2s, search <1s (per NFR-1)
+- [ ] Cross-platform: Windows, macOS, Linux all functional
+- [ ] Build time: comparable to or better than .NET build
+
+### 10.2 Process Metrics
+
+- [ ] Migration completed within 30-40 weeks (phases 1-5)
+- [ ] Zero critical bugs in production
+- [ ] Documentation complete and up-to-date
+- [ ] Team trained on Qt development
+
+### 10.3 Business Metrics
+
+- [ ] License compliance verified
+- [ ] Distribution packages ready for all platforms
+- [ ] User-facing features unchanged (transparent migration)
+
+---
+
+## 11. Recommendations
+
+### 11.1 Immediate Actions
+
+1. **Build Qt 6 Static (GPL-3)**: Build Qt 6 from source with static configuration, or obtain GPL-3 static pre-built
+2. **POC Phase 1**: Build minimal Qt WebEngine app with static linking to validate approach
+3. **Team Training**: Schedule Qt 6 and CMake training sessions
+4. **License Verification**: Confirm Qt GPL-3 static linking compliance (already verified — proceed)
+5. **Select Ed25519 Library**: Choose and integrate libsodium or alternative
+
+### 11.2 Decision Points
+
+- **End of Phase 1**: Confirm Qt WebEngine static build viability, decide Widgets vs. QML
+- **End of Phase 2**: Verify C++ service layer completeness and correctness
+- **End of Phase 4**: Go/no-go decision for production release
+
+### 11.3 Long-Term Considerations
+
+- **QML Migration**: Consider QML for future phases if Widgets proves limiting
+- **Performance Optimization**: Profile and optimize C++/Qt code (static linking may improve startup time)
+- **Community**: Engage Qt community for support and best practices
+- **Static Build Maintenance**: Document Qt static build process for future updates
+
+---
+
+## 12. Appendices
+
+### 12.1 Qt 6 Resources
+
+- Qt 6 Documentation: https://doc.qt.io/qt-6/
+- Qt WebEngine Documentation: https://doc.qt.io/qt-6/qtwebengine-index.html
+- Qt Licensing (GPL-3): https://doc.qt.io/qt-6/licensing.html
+- Qt Static Linking: https://doc.qt.io/qt-6/linux-deployment.html#static-linking
+- CMake with Qt: https://doc.qt.io/qt-6/cmake-get-started.html
+- Building Qt from Source: https://doc.qt.io/qt-6/build-sources.html
+- libsodium (Ed25519): https://github.com/jedisct1/libsodium
+
+### 12.2 Migration Checklist Template
+
+**Phase 1 Checklist**:
+- [ ] Qt 6 built statically (GPL-3) or GPL-3 static pre-built obtained
+- [ ] CMake project structure created with static linking configuration
+- [ ] Minimal MainWindow compiles and runs (static executable)
+- [ ] Qt WebEngine integrated and renders HTML
+- [ ] Cross-platform static builds working (Windows, macOS, Linux)
+- [ ] Verify single executable (no external Qt DLLs)
+- [ ] Development environment documented
+
+**Phase 2 Checklist**:
+- [ ] MainWindow layout migrated
+- [ ] Navigation pane functional
+- [ ] Search UI implemented
+- [ ] Theme system working
+- [ ] Basic cartridge loading works
+
+**Phase 3 Checklist**:
+- [ ] MainWindow UI complete
+- [ ] Navigation tree functional
+- [ ] Search interface functional
+- [ ] Theme service working
+- [ ] Link service functional (external links)
+- [ ] Print service functional
+- [ ] Search service (FTS5) working
+
+**Phase 4 Checklist**:
+- [ ] All FRs implemented
+- [ ] Acceptance tests passing
+- [ ] Authoring Tool ported (if applicable)
+- [ ] Build/CLI ported (if applicable)
+
+**Phase 5 Checklist**:
+- [ ] Test suite complete
+- [ ] Performance benchmarks met
+- [ ] Cross-platform packages built
+- [ ] Documentation updated
+- [ ] Migration guide written
+
+---
+
+## 13. Change Log
+
+| Version | Date       | Author | Summary                                    |
+|---------|------------|--------|--------------------------------------------|
+| 2.0     | 2025-11-11 | System | Updated for GPL-3 static linking and full C++/Qt migration (knife-edge cutover). |
+| 1.0     | 2025-11-11 | System | Initial migration path document created (LGPL hybrid approach). |
+
+---
+
+## End of Document
