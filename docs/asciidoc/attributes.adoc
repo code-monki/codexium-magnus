@@ -1,0 +1,33 @@
+// AsciiDoc attributes for Codexium Magnus documentation
+:project-name: Codexium Magnus
+:project-version: 1.0
+:revnumber: 1.0
+:revdate: {docdate}
+:doctype: book
+:sectnums:
+:toc: left
+:toclevels: 3
+:icons: font
+:source-highlighter: highlight.js
+:imagesdir: ../build/diagrams
+:stylesdir: ../stylesheets
+:stylesheet: codexium-magnus.css
+:pdf-stylesdir: ../themes
+:pdf-style: pdf-theme
+:author: Codexium Magnus Development Team
+:email: 
+:copyright: Copyright (C) 2025, Codexium Magnus Contributors
+:license: GPL-3.0
+
+// Theme and styling
+:flat-design: true
+:theme-system: token-based
+
+// Platform targets
+:platforms: Windows, macOS, Linux
+
+// Framework
+:ui-framework: Qt 6 (Widgets + WebEngine)
+:language: C++17/20
+:build-system: CMake
+:license-type: GPL-3.0 (static linking)

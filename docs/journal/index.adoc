@@ -1,0 +1,30 @@
+= Developer Journal Index
+:author: Codexium Magnus Development Team
+:revnumber: 1.0
+:revdate: 2025-11-11
+
+== Overview
+
+This index provides a chronological listing of all developer journal entries with cross-references to relevant documentation.
+
+== 2025
+
+=== November
+
+* link:2025/2025-11-11.md[2025-11-11] - Qt 6 migration planning, styling strategy, documentation format decisions
+
+== Cross-References
+
+=== Key Decisions
+
+* Qt 6 Migration Approach: See link:../asciidoc/qt6-migration.adoc[Qt Migration Path]
+* Styling Strategy: See link:../asciidoc/qt6-migration.adoc#styling-strategy[Styling Strategy Section]
+* Documentation Format: See link:../README.adoc[Documentation README]
+
+=== Related Documentation
+
+* link:../asciidoc/requirements.adoc[Requirements Specification]
+* link:../asciidoc/architecture.adoc[System Architecture]
+* link:../asciidoc/hld.adoc[High-Level Design]
+* link:../asciidoc/detailed-design.adoc[Detailed Design]
+* link:../asciidoc/qt6-migration.adoc[Qt 6 Migration Path]

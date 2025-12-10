@@ -1,0 +1,111 @@
+= Codexium Magnus Documentation
+:author: Codexium Magnus Development Team
+:revnumber: 1.0
+:revdate: 2025-11-11
+
+== Overview
+
+This directory contains all project documentation for Codexium Magnus, converted to AsciiDoc format with automated build tooling.
+
+== Building Documentation
+
+=== Prerequisites
+
+* Ruby and RubyGems (for AsciiDoctor)
+* Node.js and npm (for Mermaid CLI)
+* Pandoc (optional, for DOCX generation)
+
+=== Installation
+
+Run the dependency installer:
+
+[source,bash]
+----
+make install-deps
+----
+
+Or install manually:
+
+[source,bash]
+----
+gem install asciidoctor asciidoctor-pdf
+npm install -g @mermaid-js/mermaid-cli
+# Optional: Install Pandoc for DOCX support
+----
+
+=== Building
+
+Generate all documentation formats:
+
+[source,bash]
+----
+make all
+----
+
+Generate specific formats:
+
+[source,bash]
+----
+make html    # HTML documentation
+make pdf     # PDF documentation
+make docx    # DOCX documentation (requires Pandoc)
+make diagrams # Generate diagrams only
+----
+
+Output files are generated in the `build/` directory:
+* `build/html/` - HTML files
+* `build/pdf/` - PDF files
+* `build/docx/` - DOCX files
+* `build/diagrams/` - Generated diagram images (SVG/PNG)
+
+=== Cleaning
+
+Remove all generated files:
+
+[source,bash]
+----
+make clean
+----
+
+== Documentation Structure
+
+=== Source Files
+
+All AsciiDoc source files are in `asciidoc/`:
+* `requirements.adoc` - Requirements Specification
+* `architecture.adoc` - System Architecture
+* `hld.adoc` - High-Level Design
+* `detailed-design.adoc` - Detailed Design
+* `implementation-plan.adoc` - Implementation Plan
+* `project-rules.adoc` - Project Rules
+* `qt6-migration.adoc` - Qt 6 Migration Path
+
+=== Diagrams
+
+Mermaid diagram sources are in `asciidoc/diagrams/`:
+* `.mmd` files are converted to SVG (preferred) or PNG (fallback)
+* Diagrams are automatically included in documentation builds
+
+=== Developer Journal
+
+Journal entries are in `journal/YYYY/YYYY-MM-DD.md`:
+* See `journal/README.md` for entry format
+* See `journal/index.adoc` for chronological index
+
+== Contributing
+
+When updating documentation:
+
+1. Edit AsciiDoc source files in `asciidoc/`
+2. Update diagrams in `asciidoc/diagrams/` (Mermaid format)
+3. Add journal entries for significant decisions
+4. Test build: `make clean && make all`
+5. Verify output in `build/` directory
+
+== Format Guidelines
+
+* Use AsciiDoc syntax (not Markdown)
+* Include diagrams as Mermaid `.mmd` files
+* Follow existing document structure and numbering
+* Update journal for major decisions
+* Maintain cross-references between documents
