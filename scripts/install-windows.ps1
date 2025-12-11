@@ -84,6 +84,138 @@ function Get-QtComponentId {
     return "qt.qt6.$versionId.win64_$compilerId"
 }
 
+# Function to list available Qt versions
+function Get-AvailableQtVersions {
+    param([string]$InstallerPath)
+    
+    Write-Host "Searching for available Qt versions..." -ForegroundColor Yellow
+    
+    try {
+        # Search for all Qt 6.x versions
+        $searchArgs = @("search", "--filter-packages", "DisplayName=Qt")
+        $searchOutput = & $InstallerPath $searchArgs 2>&1 | Out-String
+        
+        # Extract version numbers from output
+        $versions = @()
+        if ($searchOutput -match "Version=(\d+\.\d+\.\d+)") {
+            $matches = [regex]::Matches($searchOutput, "Version=(\d+\.\d+\.\d+)")
+            foreach ($match in $matches) {
+                $version = $match.Groups[1].Value
+                if ($versions -notcontains $version) {
+                    $versions += $version
+                }
+            }
+        }
+        
+        if ($versions.Count -gt 0) {
+            Write-Host "Available Qt versions found:" -ForegroundColor Green
+            $versions | Sort-Object -Descending | ForEach-Object {
+                Write-Host "  - $_" -ForegroundColor White
+            }
+            return $versions
+        } else {
+            Write-Host "[WARN] Could not determine available Qt versions from search" -ForegroundColor Yellow
+            return @()
+        }
+    } catch {
+        Write-Host "[WARN] Could not search for Qt versions: $_" -ForegroundColor Yellow
+        return @()
+    }
+}
+
+# Function to find correct component IDs by searching
+function Find-QtComponentIds {
+    param(
+        [string]$InstallerPath,
+        [string]$Version,
+        [string]$Compiler
+    )
+    
+    Write-Host "Attempting to find correct component IDs..." -ForegroundColor Yellow
+    
+    # Try different possible component ID formats
+    $versionParts = $Version.Split('.')
+    $major = $versionParts[0]
+    $minor = $versionParts[1]
+    $patch = $versionParts[2]
+    
+    # Possible version formats
+    $versionFormats = @(
+        "$major$minor$patch",      # 693
+        "$major$($minor.PadLeft(2, '0'))$patch",  # 6093
+        "$major.$minor.$patch"     # 6.9.3 (with dots)
+    )
+    
+    $compilerId = $Compiler
+    if ($Compiler -eq "msvc2019_64") {
+        $compilerId = "msvc2019_64"
+    } elseif ($Compiler -eq "msvc2022_64") {
+        $compilerId = "msvc2022_64"
+    }
+    
+    $foundComponents = @{
+        Base = $null
+        WebEngine = $null
+    }
+    
+    # Try searching for components - handle errors gracefully
+    foreach ($versionId in $versionFormats) {
+        $baseId = "qt.qt6.$versionId.win64_$compilerId"
+        $webEngineId = "qt.qt6.$versionId.win64_$compilerId.qtwebengine"
+        
+        # Try to search for these components
+        try {
+            # Search for base component
+            $searchArgs = @("search", "--filter-packages", "Id=$baseId")
+            $searchOutput = & $InstallerPath $searchArgs 2>&1 | Out-String
+            
+            if ($LASTEXITCODE -eq 0 -and ($searchOutput -match $baseId -or $searchOutput -match "qt\.qt6")) {
+                $foundComponents.Base = $baseId
+                Write-Host "  [OK] Found base component: $baseId" -ForegroundColor Green
+                
+                # Try to find WebEngine - try multiple search patterns
+                $webEnginePatterns = @(
+                    $webEngineId,
+                    "qtwebengine",
+                    "WebEngine"
+                )
+                
+                foreach ($pattern in $webEnginePatterns) {
+                    try {
+                        $webEngineSearchArgs = @("search", "--filter-packages", "Id=$pattern")
+                        $webEngineOutput = & $InstallerPath $webEngineSearchArgs 2>&1 | Out-String
+                        
+                        if ($LASTEXITCODE -eq 0 -and ($webEngineOutput -match $webEngineId -or $webEngineOutput -match "webengine" -or $webEngineOutput -match "WebEngine")) {
+                            $foundComponents.WebEngine = $webEngineId
+                            Write-Host "  [OK] Found WebEngine component: $webEngineId" -ForegroundColor Green
+                            break
+                        }
+                    } catch {
+                        continue
+                    }
+                }
+                
+                # If we found base but not WebEngine, that's okay - user can install it manually
+                if ($foundComponents.Base) {
+                    break
+                }
+            }
+        } catch {
+            # Silently continue to next format
+            continue
+        }
+    }
+    
+    if (-not $foundComponents.Base) {
+        Write-Host "  [INFO] Could not verify component IDs via search, will use calculated format" -ForegroundColor Yellow
+    } elseif (-not $foundComponents.WebEngine) {
+        Write-Host "  [WARN] Base component found but WebEngine ID not verified" -ForegroundColor Yellow
+        Write-Host "         WebEngine may need to be installed separately via GUI" -ForegroundColor Yellow
+    }
+    
+    return $foundComponents
+}
+
 # Function to install Qt automatically
 function Install-Qt {
     param(
@@ -125,6 +257,41 @@ function Install-Qt {
     }
     
     Write-Host ""
+    Write-Host "Verifying Qt $Version availability..." -ForegroundColor Yellow
+    
+    # First, try to find correct component IDs by searching
+    $foundComponents = Find-QtComponentIds -InstallerPath $installerPath -Version $Version -Compiler $Compiler
+    
+    $componentId = $null
+    $webEngineComponent = $null
+    
+    # Calculate component IDs as fallback
+    $calculatedBaseId = Get-QtComponentId -Version $Version -Compiler $Compiler
+    $versionParts = $Version.Split('.')
+    $major = $versionParts[0]
+    $minor = $versionParts[1]
+    $patch = $versionParts[2]
+    $versionId = "$major$minor$patch"
+    $calculatedWebEngineId = "qt.qt6.$versionId.win64_$Compiler.qtwebengine"
+    
+    if ($foundComponents.Base) {
+        $componentId = $foundComponents.Base
+        # Use found WebEngine ID if available, otherwise use calculated
+        if ($foundComponents.WebEngine) {
+            $webEngineComponent = $foundComponents.WebEngine
+        } else {
+            $webEngineComponent = $calculatedWebEngineId
+            Write-Host "[WARN] Using calculated WebEngine ID (not verified via search)" -ForegroundColor Yellow
+        }
+        Write-Host "[OK] Using verified component IDs for Qt $Version" -ForegroundColor Green
+    } else {
+        # Fall back to calculated component IDs
+        Write-Host "[INFO] Could not verify component IDs via search, using calculated format" -ForegroundColor Yellow
+        $componentId = $calculatedBaseId
+        $webEngineComponent = $calculatedWebEngineId
+    }
+    
+    Write-Host ""
     Write-Host "Installing Qt $Version..." -ForegroundColor Yellow
     Write-Host "This may take 10-30 minutes depending on your internet connection." -ForegroundColor Gray
     Write-Host ""
@@ -135,28 +302,9 @@ function Install-Qt {
     Write-Host "  - The installer will continue with open source components" -ForegroundColor White
     Write-Host ""
     
-    # Get component identifier
-    # Note: Component IDs may vary by Qt version. We'll try the standard format first.
-    $componentId = Get-QtComponentId -Version $Version -Compiler $Compiler
-    
-    # WebEngine component ID format - use same version format as base component
-    # For Qt 6.8+, WebEngine is in Extensions and may have different naming
-    $versionParts = $Version.Split('.')
-    $major = $versionParts[0]
-    $minor = $versionParts[1]
-    $patch = $versionParts[2]
-    $versionId = "$major$minor$patch"
-    $webEngineComponent = "qt.qt6.$versionId.win64_$Compiler.qtwebengine"
-    
     Write-Host "Attempting to install components:" -ForegroundColor Gray
     Write-Host "  Base: $componentId" -ForegroundColor Gray
     Write-Host "  WebEngine: $webEngineComponent" -ForegroundColor Gray
-    Write-Host ""
-    Write-Host "Note: Component IDs may vary by Qt version or repository." -ForegroundColor Yellow
-    Write-Host "If installation fails with 'Component not found' error:" -ForegroundColor Yellow
-    Write-Host "  1. The Qt version may not be available in the default repository" -ForegroundColor White
-    Write-Host "  2. Run the installer manually and select components from the GUI (recommended)" -ForegroundColor White
-    Write-Host "  3. Or search for correct component IDs: $installerPath search" -ForegroundColor White
     Write-Host ""
     
     # Build installer arguments
@@ -185,17 +333,40 @@ function Install-Qt {
         } else {
             Write-Host "[ERROR] Qt installation failed with exit code: $($process.ExitCode)" -ForegroundColor Red
             Write-Host ""
-            Write-Host "The component IDs may be incorrect for this Qt version." -ForegroundColor Yellow
+            Write-Host "The automatic installation failed. This usually means:" -ForegroundColor Yellow
+            Write-Host "  - Qt $Version may not be available in the repository" -ForegroundColor White
+            Write-Host "  - The component IDs may have changed" -ForegroundColor White
+            Write-Host "  - The version may be in a different repository" -ForegroundColor White
             Write-Host ""
-            Write-Host "To find the correct component IDs, you can:" -ForegroundColor Yellow
-            Write-Host "1. Search for available components:" -ForegroundColor White
-            Write-Host "   $installerPath search --filter-packages DisplayName=Qt,Version=$Version" -ForegroundColor Cyan
-            Write-Host ""
-            Write-Host "2. Or run the installer manually:" -ForegroundColor White
-            Write-Host "   $installerPath" -ForegroundColor Cyan
-            Write-Host "   Then select Qt $Version with $Compiler and Qt WebEngine from the GUI" -ForegroundColor White
+            
+            # Try to list available Qt versions
+            Write-Host "Checking for available Qt versions..." -ForegroundColor Yellow
+            $availableVersions = Get-AvailableQtVersions -InstallerPath $installerPath
+            if ($availableVersions.Count -gt 0) {
+                Write-Host ""
+                if ($availableVersions -contains $Version) {
+                    Write-Host "Note: Qt $Version appears to be available, but component IDs may be incorrect." -ForegroundColor Yellow
+                } else {
+                    Write-Host "Note: Qt $Version was not found in available versions." -ForegroundColor Yellow
+                    Write-Host "Consider using one of the available versions listed above." -ForegroundColor Yellow
+                }
+                Write-Host ""
+            }
+            
+            Write-Host "RECOMMENDED: Use the GUI installer (most reliable method):" -ForegroundColor Cyan
+            Write-Host "  1. Run: $installerPath" -ForegroundColor White
+            Write-Host "  2. If prompted for email/password, press Enter to skip" -ForegroundColor White
+            Write-Host "  3. Select 'Open Source' license" -ForegroundColor White
+            if ($availableVersions.Count -gt 0) {
+                Write-Host "  4. Browse available Qt versions and select Qt $Version (or a compatible version)" -ForegroundColor White
+            } else {
+                Write-Host "  4. Browse available Qt versions and select Qt $Version (or latest available)" -ForegroundColor White
+            }
+            Write-Host "  5. Select $Compiler components" -ForegroundColor White
+            Write-Host "  6. Make sure to install Qt WebEngine component (required)" -ForegroundColor White
             Write-Host ""
             Write-Host "The installer has been saved to: $installerPath" -ForegroundColor Gray
+            Write-Host "After manual installation, run this script again to verify setup." -ForegroundColor Gray
             return $false
         }
     } catch {
