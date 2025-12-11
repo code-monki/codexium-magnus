@@ -72,7 +72,9 @@ function Get-QtComponentId {
         $compilerId = $Compiler
     }
     
-    # Convert version to component format (e.g., "6.9.3" -> "qt.qt6.6903")
+    # Convert version to component format (e.g., "6.9.3" -> "693")
+    # Note: Qt component IDs use version without dots
+    # Format may vary by Qt version - if installation fails, use search command to find correct IDs
     $versionParts = $Version.Split('.')
     $major = $versionParts[0]
     $minor = $versionParts[1]
@@ -134,8 +136,28 @@ function Install-Qt {
     Write-Host ""
     
     # Get component identifier
+    # Note: Component IDs may vary by Qt version. We'll try the standard format first.
     $componentId = Get-QtComponentId -Version $Version -Compiler $Compiler
-    $webEngineComponent = "qt.qt6.$($Version.Replace('.','')).win64_$Compiler.qtwebengine"
+    
+    # WebEngine component ID format - use same version format as base component
+    # For Qt 6.8+, WebEngine is in Extensions and may have different naming
+    $versionParts = $Version.Split('.')
+    $major = $versionParts[0]
+    $minor = $versionParts[1]
+    $patch = $versionParts[2]
+    $versionId = "$major$minor$patch"
+    $webEngineComponent = "qt.qt6.$versionId.win64_$Compiler.qtwebengine"
+    
+    Write-Host "Attempting to install components:" -ForegroundColor Gray
+    Write-Host "  Base: $componentId" -ForegroundColor Gray
+    Write-Host "  WebEngine: $webEngineComponent" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "Note: Component IDs may vary by Qt version or repository." -ForegroundColor Yellow
+    Write-Host "If installation fails with 'Component not found' error:" -ForegroundColor Yellow
+    Write-Host "  1. The Qt version may not be available in the default repository" -ForegroundColor White
+    Write-Host "  2. Run the installer manually and select components from the GUI (recommended)" -ForegroundColor White
+    Write-Host "  3. Or search for correct component IDs: $installerPath search" -ForegroundColor White
+    Write-Host ""
     
     # Build installer arguments
     # Note: --email and --password with empty values may skip the prompt in some versions
@@ -162,7 +184,18 @@ function Install-Qt {
             return $true
         } else {
             Write-Host "[ERROR] Qt installation failed with exit code: $($process.ExitCode)" -ForegroundColor Red
-            Write-Host "You may need to run the installer manually." -ForegroundColor Yellow
+            Write-Host ""
+            Write-Host "The component IDs may be incorrect for this Qt version." -ForegroundColor Yellow
+            Write-Host ""
+            Write-Host "To find the correct component IDs, you can:" -ForegroundColor Yellow
+            Write-Host "1. Search for available components:" -ForegroundColor White
+            Write-Host "   $installerPath search --filter-packages DisplayName=Qt,Version=$Version" -ForegroundColor Cyan
+            Write-Host ""
+            Write-Host "2. Or run the installer manually:" -ForegroundColor White
+            Write-Host "   $installerPath" -ForegroundColor Cyan
+            Write-Host "   Then select Qt $Version with $Compiler and Qt WebEngine from the GUI" -ForegroundColor White
+            Write-Host ""
+            Write-Host "The installer has been saved to: $installerPath" -ForegroundColor Gray
             return $false
         }
     } catch {
