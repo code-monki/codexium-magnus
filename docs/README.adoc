@@ -53,6 +53,7 @@ make diagrams # Generate diagrams only
 ----
 
 Output files are generated in the `build/` directory:
+
 * `build/html/` - HTML files
 * `build/pdf/` - PDF files
 * `build/docx/` - DOCX files
@@ -72,6 +73,7 @@ make clean
 === Source Files
 
 All AsciiDoc source files are in `asciidoc/`:
+
 * `requirements.adoc` - Requirements Specification
 * `architecture.adoc` - System Architecture
 * `hld.adoc` - High-Level Design
@@ -83,12 +85,14 @@ All AsciiDoc source files are in `asciidoc/`:
 === Diagrams
 
 Mermaid diagram sources are in `asciidoc/diagrams/`:
+
 * `.mmd` files are converted to SVG (preferred) or PNG (fallback)
 * Diagrams are automatically included in documentation builds
 
 === Developer Journal
 
 Journal entries are in `journal/YYYY/YYYY-MM-DD.md`:
+
 * See `journal/README.md` for entry format
 * See `journal/index.adoc` for chronological index
 
