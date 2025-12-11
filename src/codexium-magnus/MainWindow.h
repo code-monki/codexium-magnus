@@ -28,6 +28,7 @@
 #include "UI/NavigationPane.h"
 #include "UI/SearchPane.h"
 #include "UI/SettingsDialog.h"
+#include "UI/HelpDialog.h"
 
 namespace CodexiumMagnus {
 
@@ -60,6 +61,7 @@ private slots:
     void onSettings();
     void onSettingsAccepted(const Core::Models::TypographyConfig& typography,
                            const Core::Models::BibliographyConfig& bibliography);
+    void onHelp();
     void onZoomIn();
     void onZoomOut();
     void onZoomReset();

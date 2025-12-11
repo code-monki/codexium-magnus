@@ -16,6 +16,7 @@ set(APP_SOURCES
     UI/NavigationPane.cpp
     UI/SearchPane.cpp
     UI/SettingsDialog.cpp
+    UI/HelpDialog.cpp
     UI/TypographySettingsWidget.cpp
     UI/BibliographySettingsWidget.cpp
 )
@@ -37,6 +38,7 @@ set(APP_HEADERS
     UI/NavigationPane.h
     UI/SearchPane.h
     UI/SettingsDialog.h
+    UI/HelpDialog.h
     UI/TypographySettingsWidget.h
     UI/BibliographySettingsWidget.h
 )

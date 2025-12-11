@@ -278,10 +278,14 @@ void MainWindow::setupMenuBar() {
     settingsMenu->addAction("&Preferences...", this, &MainWindow::onSettings, QKeySequence::Preferences);
     
     QMenu *helpMenu = menuBar()->addMenu("&Help");
+    QAction *helpAction = helpMenu->addAction("&Help...", this, &MainWindow::onHelp);
+    helpAction->setShortcut(QKeySequence(QKeySequence::HelpContents));
+    helpMenu->addSeparator();
     helpMenu->addAction("&About", this, []() {
         QMessageBox::about(nullptr, "About Codexium Magnus",
             "Codexium Magnus v1.0.0\n\n"
-            "A cross-platform archival reader using Qt 6.");
+            "A cross-platform archival reader built with Qt 6 and WebEngine.\n\n"
+            "Copyright © 2025");
     });
 }
 
@@ -350,7 +354,7 @@ void MainWindow::setupWebEngine() {
     // Create WebEngine bridge
     m_webEngineBridge = new Services::WebEngineBridge(m_webEngineView, this);
     
-    // Load initial page (placeholder - will be replaced with cartridge content)
+    // Load minimal empty state (WCAG-compliant: clean main content area)
     QString htmlContent = R"(
         <!DOCTYPE html>
         <html>
@@ -360,98 +364,35 @@ void MainWindow::setupWebEngine() {
             <style>
                 body {
                     font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-height: 100vh;
+                    margin: 0;
                     padding: 40px;
-                    max-width: 900px;
-                    margin: 0 auto;
-                    line-height: 1.6;
+                    text-align: center;
+                }
+                .empty-state {
+                    max-width: 500px;
                 }
                 h1 {
-                    font-size: 2.5em;
-                    margin-bottom: 0.5em;
-                    border-bottom: 2px solid currentColor;
-                    padding-bottom: 0.3em;
-                }
-                h2 {
                     font-size: 1.8em;
-                    margin-top: 1.5em;
                     margin-bottom: 0.5em;
+                    font-weight: 300;
                 }
                 p {
-                    margin-bottom: 1em;
-                }
-                ul, ol {
-                    margin-left: 2em;
-                    margin-bottom: 1em;
-                }
-                li {
-                    margin-bottom: 0.5em;
-                }
-                code {
-                    background: rgba(128, 128, 128, 0.2);
-                    padding: 2px 6px;
-                    border-radius: 3px;
-                    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-                    font-size: 0.9em;
-                }
-                .keyboard-shortcut {
-                    display: inline-block;
-                    background: rgba(128, 128, 128, 0.15);
-                    padding: 2px 8px;
-                    border-radius: 4px;
-                    font-family: monospace;
-                    font-size: 0.85em;
-                    border: 1px solid rgba(128, 128, 128, 0.3);
-                }
-                .tip {
-                    background: rgba(100, 150, 255, 0.1);
-                    border-left: 4px solid rgba(100, 150, 255, 0.5);
-                    padding: 12px 16px;
-                    margin: 16px 0;
-                    border-radius: 4px;
+                    font-size: 1em;
+                    color: rgba(128, 128, 128, 0.8);
+                    margin-top: 1em;
                 }
             </style>
         </head>
         <body>
-            <h1>Codexium Magnus</h1>
-            <p>Welcome to Codexium Magnus — A cross-platform archival reader built with Qt 6 and WebEngine.</p>
-            
-            <h2>Getting Started</h2>
-            <p>To begin reading content:</p>
-            <ol>
-                <li>Go to <strong>File → Open Cartridge...</strong> (or press <span class="keyboard-shortcut">Ctrl+O</span> / <span class="keyboard-shortcut">Cmd+O</span>) to load a cartridge database</li>
-                <li>Browse documents using the navigation pane on the left</li>
-                <li>Search for content using the search pane</li>
-                <li>Click on any document or search result to view its content</li>
-            </ol>
-            
-            <h2>Features</h2>
-            <ul>
-                <li><strong>Zoom Control:</strong> Use <span class="keyboard-shortcut">Ctrl/Cmd + Plus</span> to zoom in, <span class="keyboard-shortcut">Ctrl/Cmd + Minus</span> to zoom out, or <span class="keyboard-shortcut">Ctrl/Cmd + 0</span> to reset to 100%. Your zoom preference is saved automatically.</li>
-                <li><strong>Themes:</strong> Switch between Light, Sepia, and Dark themes via the Theme menu. Themes apply token-based styling for consistent appearance.</li>
-                <li><strong>Settings:</strong> Customize typography (fonts, sizes, heading scales) and bibliography preferences (citation styles, sorting, grouping) via Settings → Preferences.</li>
-                <li><strong>Print & Export:</strong> Print documents to a physical printer or export to PDF format.</li>
-                <li><strong>Search:</strong> Full-text search with FTS5 support, including case-sensitive, fuzzy, and wildcard options.</li>
-                <li><strong>Security:</strong> Ed25519 signature verification for cartridge authenticity and trust levels.</li>
-            </ul>
-            
-            <div class="tip">
-                <strong>💡 Tip:</strong> Try zooming in and out on this page using the keyboard shortcuts or View menu to see the zoom functionality in action. The zoom level will persist across sessions.
+            <div class="empty-state">
+                <h1>Codexium Magnus</h1>
+                <p>Open a cartridge to begin reading.</p>
+                <p>Go to <strong>File → Open Cartridge...</strong> or press <strong>Ctrl+O</strong> / <strong>Cmd+O</strong></p>
             </div>
-            
-            <h2>Keyboard Shortcuts</h2>
-            <ul>
-                <li><span class="keyboard-shortcut">Ctrl/Cmd + O</span> - Open Cartridge</li>
-                <li><span class="keyboard-shortcut">Ctrl/Cmd + P</span> - Print</li>
-                <li><span class="keyboard-shortcut">Ctrl/Cmd + Plus</span> - Zoom In</li>
-                <li><span class="keyboard-shortcut">Ctrl/Cmd + Minus</span> - Zoom Out</li>
-                <li><span class="keyboard-shortcut">Ctrl/Cmd + 0</span> - Reset Zoom</li>
-                <li><span class="keyboard-shortcut">Ctrl/Cmd + ,</span> - Preferences</li>
-            </ul>
-            
-            <h2>About</h2>
-            <p>Codexium Magnus is an open-source, cross-platform digital library and archive viewer designed to host, search, and display modular "cartridges" of curated content. Built with Qt 6, it supports both literary and technical content including rulebooks, research papers, and archives.</p>
-            
-            <p><em>Version 1.0.0 — Qt 6 Migration Complete</em></p>
         </body>
         </html>
     )";
@@ -639,6 +580,11 @@ void MainWindow::onSettings() {
     if (dialog.exec() == QDialog::Accepted) {
         // Settings are saved in the dialog, and onSettingsAccepted is called
     }
+}
+
+void MainWindow::onHelp() {
+    UI::HelpDialog dialog(this);
+    dialog.exec();
 }
 
 void MainWindow::onSettingsAccepted(const Core::Models::TypographyConfig& typography,
