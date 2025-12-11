@@ -92,15 +92,30 @@ function Install-Qt {
     
     Write-Host "Downloading Qt Online Installer..." -ForegroundColor Yellow
     
-    $installerUrl = "https://download.qt.io/official_releases/online_installers/qt-unified-windows-x64-online.exe"
-    $installerPath = Join-Path $env:TEMP "qt-unified-windows-x64-online.exe"
+    # Qt installer URL - updated filename as of 2025
+    $installerUrl = "https://download.qt.io/official_releases/online_installers/qt-online-installer-windows-x64-online.exe"
+    $installerPath = Join-Path $env:TEMP "qt-online-installer-windows-x64-online.exe"
     
     try {
         # Download installer
-        Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath -UseBasicParsing
+        Write-Host "Downloading from: $installerUrl" -ForegroundColor Gray
+        Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath -UseBasicParsing -ErrorAction Stop
         Write-Host "[OK] Download complete" -ForegroundColor Green
     } catch {
         Write-Host "[ERROR] Failed to download Qt installer: $_" -ForegroundColor Red
+        Write-Host ""
+        Write-Host "The automatic download failed. This may be due to:" -ForegroundColor Yellow
+        Write-Host "  - Qt has changed their download URL structure" -ForegroundColor White
+        Write-Host "  - Network connectivity issues" -ForegroundColor White
+        Write-Host "  - The installer URL is temporarily unavailable" -ForegroundColor White
+        Write-Host ""
+        Write-Host "Please download the Qt Online Installer manually:" -ForegroundColor Yellow
+        Write-Host "1. Visit: https://www.qt.io/download-open-source" -ForegroundColor White
+        Write-Host "2. Click 'Download the Qt Online Installer' for Windows" -ForegroundColor White
+        Write-Host "3. Run the installer and install Qt $Version with $Compiler components" -ForegroundColor White
+        Write-Host "4. Make sure to install Qt WebEngine component (required)" -ForegroundColor White
+        Write-Host "5. After installation, run this script again" -ForegroundColor White
+        Write-Host ""
         return $false
     }
     
