@@ -112,9 +112,12 @@ function Install-Qt {
         Write-Host "Please download the Qt Online Installer manually:" -ForegroundColor Yellow
         Write-Host "1. Visit: https://www.qt.io/download-open-source" -ForegroundColor White
         Write-Host "2. Click 'Download the Qt Online Installer' for Windows" -ForegroundColor White
-        Write-Host "3. Run the installer and install Qt $Version with $Compiler components" -ForegroundColor White
-        Write-Host "4. Make sure to install Qt WebEngine component (required)" -ForegroundColor White
-        Write-Host "5. After installation, run this script again" -ForegroundColor White
+        Write-Host "3. Run the installer" -ForegroundColor White
+        Write-Host "   - If prompted for email/password, press Enter to skip (for open source)" -ForegroundColor White
+        Write-Host "   - Select 'Open Source' license when prompted" -ForegroundColor White
+        Write-Host "4. Install Qt $Version with $Compiler components" -ForegroundColor White
+        Write-Host "5. Make sure to install Qt WebEngine component (required)" -ForegroundColor White
+        Write-Host "6. After installation, run this script again" -ForegroundColor White
         Write-Host ""
         return $false
     }
@@ -123,12 +126,19 @@ function Install-Qt {
     Write-Host "Installing Qt $Version..." -ForegroundColor Yellow
     Write-Host "This may take 10-30 minutes depending on your internet connection." -ForegroundColor Gray
     Write-Host ""
+    Write-Host "IMPORTANT: If the installer prompts for an email and password:" -ForegroundColor Cyan
+    Write-Host "  - This is for Qt commercial license checking" -ForegroundColor White
+    Write-Host "  - For open source development, you can skip this" -ForegroundColor White
+    Write-Host "  - Simply press Enter (leave fields empty) when prompted" -ForegroundColor White
+    Write-Host "  - The installer will continue with open source components" -ForegroundColor White
+    Write-Host ""
     
     # Get component identifier
     $componentId = Get-QtComponentId -Version $Version -Compiler $Compiler
     $webEngineComponent = "qt.qt6.$($Version.Replace('.','')).win64_$Compiler.qtwebengine"
     
     # Build installer arguments
+    # Note: --email and --password with empty values may skip the prompt in some versions
     $installArgs = @(
         "--root", $InstallPath,
         "--accept-licenses",
@@ -290,8 +300,11 @@ if (-not $qtPath -and -not $SkipQt) {
             Write-Host ""
             Write-Host "Automatic installation failed. Please install Qt manually:" -ForegroundColor Yellow
             Write-Host "1. Download Qt Online Installer: https://www.qt.io/download-open-source" -ForegroundColor White
-            Write-Host "2. Install Qt $QtVersion with $Compiler components" -ForegroundColor White
-            Write-Host "3. Install Qt WebEngine component (required)" -ForegroundColor White
+            Write-Host "2. Run the installer" -ForegroundColor White
+            Write-Host "   - If prompted for email/password (commercial license check), press Enter to skip" -ForegroundColor White
+            Write-Host "   - Select 'Open Source' license when prompted" -ForegroundColor White
+            Write-Host "3. Install Qt $QtVersion with $Compiler components" -ForegroundColor White
+            Write-Host "4. Install Qt WebEngine component (required)" -ForegroundColor White
             Write-Host ""
             $response = Read-Host "Continue anyway? (y/N)"
             if ($response -ne "y" -and $response -ne "Y") {
@@ -306,6 +319,9 @@ if (-not $qtPath -and -not $SkipQt) {
         Write-Host ""
         Write-Host "2. Manual installation:" -ForegroundColor White
         Write-Host "   - Download Qt Online Installer: https://www.qt.io/download-open-source" -ForegroundColor Gray
+        Write-Host "   - Run the installer" -ForegroundColor Gray
+        Write-Host "   - If prompted for email/password, press Enter to skip (for open source)" -ForegroundColor Gray
+        Write-Host "   - Select 'Open Source' license when prompted" -ForegroundColor Gray
         Write-Host "   - Install Qt $QtVersion with $Compiler components" -ForegroundColor Gray
         Write-Host "   - Install Qt WebEngine component (required)" -ForegroundColor Gray
         Write-Host ""
