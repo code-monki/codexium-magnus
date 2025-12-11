@@ -25,7 +25,7 @@ if ($Clean) {
     if (Test-Path $BuildDir) {
         Write-Host "Cleaning build directory..." -ForegroundColor Yellow
         Remove-Item -Recurse -Force $BuildDir
-        Write-Host "✓ Build directory cleaned" -ForegroundColor Green
+        Write-Host "[OK] Build directory cleaned" -ForegroundColor Green
     }
 }
 
@@ -53,7 +53,7 @@ if ($process.ExitCode -ne 0) {
 }
 
 Write-Host ""
-Write-Host "✓ Build successful!" -ForegroundColor Green
+Write-Host "[OK] Build successful!" -ForegroundColor Green
 Write-Host ""
 Write-Host "Executable location:" -ForegroundColor Cyan
 $exePath = Join-Path $BuildDir "src\codexium-magnus\$BuildType\codexium-magnus.exe"

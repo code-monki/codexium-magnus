@@ -92,6 +92,10 @@ Builds and runs the application.
 
 ## Quick Start
 
+You can use either PowerShell scripts (`.ps1`) or batch files (`.bat`). The batch files are wrappers that automatically bypass PowerShell execution policy.
+
+### Using PowerShell Scripts
+
 1. **Install dependencies:**
    ```powershell
    .\scripts\install-windows.ps1
@@ -107,6 +111,28 @@ Builds and runs the application.
    ```powershell
    .\scripts\run-windows.ps1
    ```
+
+### Using Batch Files (Alternative)
+
+If you prefer cmd.exe or want to avoid execution policy issues:
+
+1. **Install dependencies:**
+   ```cmd
+   .\scripts\install-windows.bat
+   ```
+
+2. **Configure and build:**
+   ```cmd
+   .\scripts\configure-windows.bat
+   .\scripts\build-windows.bat
+   ```
+
+3. **Run:**
+   ```cmd
+   .\scripts\run-windows.bat
+   ```
+
+**Note:** The batch files are simple wrappers that call the PowerShell scripts with execution policy bypassed. All functionality is the same.
 
 ## Alternative: Using Makefile
 
@@ -130,10 +156,23 @@ make run
 
 ### Script Execution Policy
 
-If you get an execution policy error, run:
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-```
+If you get an execution policy error when running `.ps1` files directly, you have two options:
+
+1. **Use the batch files instead** (recommended):
+   ```cmd
+   .\scripts\install-windows.bat
+   ```
+   The batch files automatically bypass execution policy.
+
+2. **Or change PowerShell execution policy:**
+   ```powershell
+   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+   ```
+
+3. **Or run PowerShell with bypass flag:**
+   ```powershell
+   PowerShell -ExecutionPolicy Bypass -File .\scripts\install-windows.ps1
+   ```
 
 ### Qt Not Found
 

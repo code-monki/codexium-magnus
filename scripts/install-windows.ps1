@@ -98,9 +98,9 @@ function Install-Qt {
     try {
         # Download installer
         Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath -UseBasicParsing
-        Write-Host "✓ Download complete" -ForegroundColor Green
+        Write-Host "[OK] Download complete" -ForegroundColor Green
     } catch {
-        Write-Host "✗ Failed to download Qt installer: $_" -ForegroundColor Red
+        Write-Host "[ERROR] Failed to download Qt installer: $_" -ForegroundColor Red
         return $false
     }
     
@@ -129,19 +129,19 @@ function Install-Qt {
         $process = Start-Process -FilePath $installerPath -ArgumentList $installArgs -Wait -PassThru -NoNewWindow
         
         if ($process.ExitCode -eq 0) {
-            Write-Host "✓ Qt installation completed successfully" -ForegroundColor Green
+            Write-Host "[OK] Qt installation completed successfully" -ForegroundColor Green
             
             # Clean up installer
             Remove-Item -Path $installerPath -Force -ErrorAction SilentlyContinue
             
             return $true
         } else {
-            Write-Host "✗ Qt installation failed with exit code: $($process.ExitCode)" -ForegroundColor Red
+            Write-Host "[ERROR] Qt installation failed with exit code: $($process.ExitCode)" -ForegroundColor Red
             Write-Host "You may need to run the installer manually." -ForegroundColor Yellow
             return $false
         }
     } catch {
-        Write-Host "✗ Failed to run Qt installer: $_" -ForegroundColor Red
+        Write-Host "[ERROR] Failed to run Qt installer: $_" -ForegroundColor Red
         Write-Host "You may need to run the installer manually: $installerPath" -ForegroundColor Yellow
         return $false
     }
@@ -156,7 +156,7 @@ if (-not (Test-Command "git")) {
     Write-Host "Please install Git from: https://git-scm.com/download/win" -ForegroundColor Yellow
     exit 1
 }
-Write-Host "✓ Git found" -ForegroundColor Green
+Write-Host "[OK] Git found" -ForegroundColor Green
 
 # Check for CMake
 $cmakeFound = Test-Command "cmake"
@@ -168,7 +168,9 @@ if (-not $cmakeFound -and -not $SkipCMake) {
         Write-Host "Installing CMake via winget..." -ForegroundColor Yellow
         winget install -e --id Kitware.CMake --silent
         if ($LASTEXITCODE -eq 0) {
-            $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+            $machinePath = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
+            $userPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
+            $env:Path = $machinePath + ";" + $userPath
             $cmakeFound = Test-Command "cmake"
         }
     }
@@ -178,7 +180,9 @@ if (-not $cmakeFound -and -not $SkipCMake) {
         Write-Host "Installing CMake via Chocolatey..." -ForegroundColor Yellow
         if ($isAdmin) {
             choco install cmake -y
-            $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+            $machinePath = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
+            $userPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
+            $env:Path = $machinePath + ";" + $userPath
             $cmakeFound = Test-Command "cmake"
         } else {
             Write-Host "WARNING: Administrator privileges required for Chocolatey installation." -ForegroundColor Yellow
@@ -196,9 +200,9 @@ if (-not $cmakeFound -and -not $SkipCMake) {
 
 if ($cmakeFound) {
     $cmakeVersion = (cmake --version | Select-Object -First 1)
-    Write-Host "✓ CMake found: $cmakeVersion" -ForegroundColor Green
+    Write-Host "[OK] CMake found: $cmakeVersion" -ForegroundColor Green
 } else {
-    Write-Host "⚠ CMake check skipped" -ForegroundColor Yellow
+    Write-Host "[WARN] CMake check skipped" -ForegroundColor Yellow
 }
 
 # Check for C++ compiler
@@ -207,7 +211,7 @@ if (-not $SkipCompiler) {
     # Check for MSVC (cl.exe)
     if (Test-Command "cl") {
         $compilerFound = $true
-        Write-Host "✓ MSVC compiler found" -ForegroundColor Green
+        Write-Host "[OK] MSVC compiler found" -ForegroundColor Green
     } else {
         # Check for Visual Studio installation
         $vsPaths = @(
@@ -223,20 +227,20 @@ if (-not $SkipCompiler) {
         foreach ($vsPath in $vsPaths) {
             if (Test-Directory $vsPath) {
                 $vsFound = $true
-                Write-Host "✓ Visual Studio found at: $vsPath" -ForegroundColor Green
+                Write-Host "[OK] Visual Studio found at: $vsPath" -ForegroundColor Green
                 Write-Host "  Note: Use 'Developer Command Prompt' or 'x64 Native Tools Command Prompt' to build" -ForegroundColor Yellow
                 break
             }
         }
         
         if (-not $vsFound) {
-            Write-Host "⚠ C++ compiler not found in PATH" -ForegroundColor Yellow
+            Write-Host "[WARN] C++ compiler not found in PATH" -ForegroundColor Yellow
             Write-Host "  Install Visual Studio Build Tools or Visual Studio with C++ workload" -ForegroundColor Yellow
             Write-Host "  Download: https://visualstudio.microsoft.com/downloads/" -ForegroundColor Yellow
         }
     }
 } else {
-    Write-Host "⚠ Compiler check skipped" -ForegroundColor Yellow
+    Write-Host "[WARN] Compiler check skipped" -ForegroundColor Yellow
 }
 
 # Check for Qt
@@ -255,7 +259,7 @@ if (-not $qtPath -and -not $SkipQt) {
             # Verify installation
             $qtPath = Find-QtInstallation -Version $QtVersion -Compiler $Compiler
             if (-not $qtPath) {
-                Write-Host "⚠ Qt installed but not found. You may need to restart your terminal." -ForegroundColor Yellow
+                Write-Host "[WARN] Qt installed but not found. You may need to restart your terminal." -ForegroundColor Yellow
             }
         } else {
             Write-Host ""
@@ -306,7 +310,7 @@ if (-not $qtPath -and -not $SkipQt) {
 
 if ($qtPath) {
     $qt6Dir = Join-Path $qtPath "lib\cmake\Qt6"
-    Write-Host "✓ Qt found at: $qtPath" -ForegroundColor Green
+    Write-Host "[OK] Qt found at: $qtPath" -ForegroundColor Green
     
     # Set environment variable for current session
     $env:Qt6_DIR = $qt6Dir
@@ -328,7 +332,7 @@ if (-not $SkipLibsodium) {
     # Check vcpkg
     if (Test-Command "vcpkg") {
         $libsodiumFound = $true
-        Write-Host "✓ vcpkg found (libsodium can be installed via vcpkg)" -ForegroundColor Green
+        Write-Host "[OK] vcpkg found (libsodium can be installed via vcpkg)" -ForegroundColor Green
     } else {
         # Check if libsodium is in common locations
         $possiblePaths = @(
@@ -340,19 +344,19 @@ if (-not $SkipLibsodium) {
         foreach ($path in $possiblePaths) {
             if (Test-Directory $path) {
                 $libsodiumFound = $true
-                Write-Host "✓ libsodium found at: $path" -ForegroundColor Green
+                Write-Host "[OK] libsodium found at: $path" -ForegroundColor Green
                 break
             }
         }
     }
     
     if (-not $libsodiumFound) {
-        Write-Host "⚠ libsodium not found (optional, for signature verification)" -ForegroundColor Yellow
+        Write-Host "[WARN] libsodium not found (optional, for signature verification)" -ForegroundColor Yellow
         Write-Host "  Install via vcpkg: vcpkg install libsodium:x64-windows" -ForegroundColor Yellow
         Write-Host "  Or download from: https://download.libsodium.org/libsodium/releases/" -ForegroundColor Yellow
     }
 } else {
-    Write-Host "⚠ libsodium check skipped" -ForegroundColor Yellow
+    Write-Host "[WARN] libsodium check skipped" -ForegroundColor Yellow
 }
 
 Write-Host ""
@@ -365,9 +369,9 @@ Write-Host ""
 if ($env:Qt6_DIR -and (Test-Command "cmake")) {
     Write-Host "Verifying Qt6_DIR..." -ForegroundColor Yellow
     if (Test-Path $env:Qt6_DIR) {
-        Write-Host "✓ Qt6_DIR is valid: $env:Qt6_DIR" -ForegroundColor Green
+        Write-Host "[OK] Qt6_DIR is valid: $env:Qt6_DIR" -ForegroundColor Green
     } else {
-        Write-Host "✗ Qt6_DIR path does not exist: $env:Qt6_DIR" -ForegroundColor Red
+        Write-Host "[ERROR] Qt6_DIR path does not exist: $env:Qt6_DIR" -ForegroundColor Red
     }
 }
 

@@ -94,7 +94,7 @@ if ($process.ExitCode -ne 0) {
 }
 
 Write-Host ""
-Write-Host "✓ CMake configuration successful!" -ForegroundColor Green
+Write-Host "[OK] CMake configuration successful!" -ForegroundColor Green
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Cyan
 Write-Host "  make build" -ForegroundColor White
