@@ -31,6 +31,35 @@ This guide provides step-by-step instructions for installing dependencies and bu
 
 ## Windows Installation
 
+### Quick Start (Automated)
+
+For the easiest setup, use the provided PowerShell scripts:
+
+1. **Install dependencies:**
+   ```powershell
+   .\scripts\install-windows.ps1
+   ```
+   This script will:
+   - Check for required tools (Git, CMake, compiler, Qt)
+   - Attempt to install CMake automatically (via winget or Chocolatey)
+   - Find Qt installation and set environment variables
+   - Provide clear next steps
+
+2. **Configure and build:**
+   ```powershell
+   .\scripts\configure-windows.ps1
+   .\scripts\build-windows.ps1
+   ```
+
+3. **Run:**
+   ```powershell
+   .\scripts\run-windows.ps1
+   ```
+
+See `scripts/README.md` for detailed script documentation.
+
+### Manual Installation
+
 ### Option 1: Qt Online Installer (Recommended)
 
 1. **Download Qt 6.9.3**
@@ -97,32 +126,31 @@ This guide provides step-by-step instructions for installing dependencies and bu
 
 ### Building on Windows
 
-1. **Open Developer Command Prompt** (for MSVC) or **Git Bash** (for MinGW)
+**Option A: Using PowerShell Scripts (Recommended)**
+```powershell
+.\scripts\install-windows.ps1    # Install dependencies
+.\scripts\configure-windows.ps1  # Configure CMake
+.\scripts\build-windows.ps1      # Build project
+.\scripts\run-windows.ps1        # Build and run
+```
 
-2. **Configure and Build**
-   ```cmd
-   git clone <repository-url>
-   cd codexium-magnus
-   make configure
-   make build
-   ```
+**Option B: Using Makefile** (requires Make - Git Bash, WSL, or Chocolatey)
+```cmd
+git clone <repository-url>
+cd codexium-magnus
+make configure
+make build
+make run
+```
 
-   Or manually:
-   ```cmd
-   mkdir build
-   cd build
-   cmake .. -DCMAKE_BUILD_TYPE=Release -DQt6_DIR=%USERPROFILE%\Qt\6.9.3\msvc2019_64\lib\cmake\Qt6
-   cmake --build . --config Release
-   ```
-
-3. **Run the Application**
-   ```cmd
-   make run
-   ```
-   Or:
-   ```cmd
-   .\build\src\codexium-magnus\Release\codexium-magnus.exe
-   ```
+**Option C: Manual CMake**
+```cmd
+mkdir build
+cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release -DQt6_DIR=%USERPROFILE%\Qt\6.9.3\msvc2019_64\lib\cmake\Qt6
+cmake --build . --config Release
+.\src\codexium-magnus\Release\codexium-magnus.exe
+```
 
 ---
 
