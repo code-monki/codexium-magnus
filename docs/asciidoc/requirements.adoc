@@ -104,17 +104,17 @@ Codexium Magnus is a standalone desktop application with optional companion tool
 === 2.4 Operating Environment
 
 * Platforms: Windows 10+, macOS 13+, Linux (GTK-compatible).
-* Framework: Qt 6 (Widgets + WebEngine), statically linked under GPL-3.
+* Framework: Qt 6 (Widgets + WebEngine), dynamically linked under GPL-3 (WebEngine requires dynamic linking due to Chromium licensing).
 * Language: C++17/20.
 * Database: SQLite3 (FTS5 enabled).
 * Build System: CMake.
-* Package format: Static executable per OS (single binary deployment).
+* Package format: Application executable + Qt runtime libraries per OS (standard Qt deployment model).
 
 === 2.5 Design and Implementation Constraints
 
 * Must comply with GPL-3 license.
 * All code written in C++17/20 using Qt 6 framework.
-* Qt 6 statically linked (GPL-3 compatible).
+* Qt 6 dynamically linked (GPL-3 compatible, WebEngine requirement).
 * All content signing uses Ed25519.
 * No proprietary frameworks or paid dependencies.
 
@@ -302,7 +302,7 @@ The system shall support programmatic generation of bibliographies, including AP
 
 === 7.1 Licensing
 
-Codexium Magnus and its components are released under GPL-3. Qt 6 is statically linked under GPL-3 license.
+Codexium Magnus and its components are released under GPL-3. Qt 6 is dynamically linked under GPL-3 license (WebEngine requires dynamic linking due to Chromium licensing constraints).
 
 === 7.2 Signing Model
 

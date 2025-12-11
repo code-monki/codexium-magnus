@@ -121,7 +121,7 @@ Makefiles must use *tabs*, not spaces.
 === 6.4 CMake Configuration
 
 * Use CMake 3.20+ minimum
-* Configure for static linking (`BUILD_SHARED_LIBS=OFF`)
+* Configure for dynamic linking (`BUILD_SHARED_LIBS=ON` or default - WebEngine requires dynamic linking)
 * Document Qt version and build configuration
 * Ensure reproducible builds
 

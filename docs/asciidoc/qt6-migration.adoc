@@ -17,16 +17,16 @@ include::attributes.adoc[]
 |Draft
 
 |*Scope:*
-|Complete migration path from Avalonia + CEF to Qt 6 (GPL-3, statically linked) while preserving all functional requirements and architectural principles.
+|Complete migration path from Avalonia + CEF to Qt 6 (GPL-3, dynamically linked) while preserving all functional requirements and architectural principles.
 |===
 
 == 1. Executive Summary
 
-This document outlines a *complete cutover migration* for Codexium Magnus from the current *Avalonia UI + CEF* stack to *Qt 6 (GPL-3, statically linked)*. The project is at PoC stage, enabling a "knife-edge cutover" approach. The migration preserves all functional requirements (FR-1 through FR-12), maintains the layered architecture, and ensures cross-platform compatibility across Windows, macOS, and Linux.
+This document outlines a *complete cutover migration* for Codexium Magnus from the current *Avalonia UI + CEF* stack to *Qt 6 (GPL-3, dynamically linked)*. The project is at PoC stage, enabling a "knife-edge cutover" approach. The migration preserves all functional requirements (FR-1 through FR-12), maintains the layered architecture, and ensures cross-platform compatibility across Windows, macOS, and Linux. Note: Qt WebEngine requires dynamic linking due to Chromium licensing constraints.
 
 === 1.1 Key Decisions
 
-1. *Qt 6 GPL-3* with *static linking* — fully compatible with project's GPL-3 license.
+1. *Qt 6 GPL-3* with *dynamic linking* — required for Qt WebEngine (Chromium-based), fully compatible with GPL-3 license.
 2. *Qt WebEngine* replaces CEF (both are Chromium-based, ensuring feature parity).
 3. *Full C++/Qt migration* — complete rewrite, no hybrid approach.
 4. *Knife-edge cutover* — acceptable at PoC stage; no phased migration needed.
@@ -36,46 +36,47 @@ This document outlines a *complete cutover migration* for Codexium Magnus from t
 * *UI Framework*: Avalonia → Qt Widgets or QML
 * *HTML Rendering*: CEF → Qt WebEngine
 * *Backend Services*: Full C++/Qt rewrite (no .NET retention)
-* *Build System*: .NET SDK → CMake + Qt build tools (static linking)
+* *Build System*: .NET SDK → CMake + Qt build tools (dynamic linking - WebEngine requirement)
 * *Testing*: Port test harnesses to Qt Test framework
 * *Runtime*: Remove .NET dependency entirely
 
 == 2. Licensing Analysis
 
-=== 2.1 Qt 6 GPL-3 Static Linking
+=== 2.1 Qt 6 GPL-3 Dynamic Linking
 
-**Conclusion**: Qt 6 can be *statically linked* when the application is licensed under GPL-3.
+**Conclusion**: Qt 6 must use *dynamic linking* due to Qt WebEngine's Chromium foundation, which has licensing constraints preventing static linking.
 
 **Rationale**:
 
-* Qt's GPL-3 license permits static linking when the entire application is GPL-3.
-* Codexium Magnus is GPL-3, satisfying this requirement.
-* Static linking simplifies deployment (single executable, no DLL dependencies).
-* No licensing conflicts exist.
+* Qt's GPL-3 license permits both static and dynamic linking when the application is GPL-3.
+* However, **Qt WebEngine is based on Chromium**, which has licensing constraints that prevent static linking.
+* Codexium Magnus requires Qt WebEngine for HTML rendering, so dynamic linking is mandatory.
+* For consistency and to avoid mixed linking scenarios, all Qt components use dynamic linking.
+* No licensing conflicts exist with dynamic linking under GPL-3.
 
 **Requirements**:
 
-* Build Qt from source with GPL-3 configuration (or use pre-built GPL-3 Qt).
-* Statically link all Qt libraries into the application.
+* Use pre-built Qt 6 (GPL-3) with dynamic linking, or build from source with dynamic linking enabled.
+* Distribute Qt runtime libraries with the application (standard Qt deployment model).
 * Include Qt GPL-3 license text in distribution.
 * Provide complete source code (already required by GPL-3).
 * Document Qt version and build configuration.
 
-**Benefits of Static Linking**:
+**Deployment Model**:
 
-* Single executable deployment (no separate Qt DLLs).
-* Simplified distribution and installation.
-* No runtime Qt version conflicts.
-* Smaller deployment footprint (only link what's used).
+* Application executable + Qt runtime libraries (DLLs/.so/.dylib).
+* Standard Qt deployment tools can be used (`windeployqt`, `macdeployqt`, `linuxdeployqt`).
+* Qt runtime libraries must be included in distribution package.
 
 === 2.2 License Compliance Checklist
 
-* [ ] Build Qt 6 from source with GPL-3 configuration (or use GPL-3 pre-built)
-* [ ] Configure CMake for static linking (`-DBUILD_SHARED_LIBS=OFF`)
+* [ ] Use Qt 6 (GPL-3) with dynamic linking (WebEngine requirement)
+* [ ] Configure CMake for dynamic linking (`-DBUILD_SHARED_LIBS=ON` or default)
 * [ ] Include Qt GPL-3 license text in distribution
 * [ ] Include all Qt source code (or link to official Qt sources)
-* [ ] Document Qt version and static build configuration
+* [ ] Document Qt version and dynamic build configuration
 * [ ] Ensure all dependencies are GPL-3 compatible
+* [ ] Use Qt deployment tools to bundle runtime libraries
 * [ ] Update project license documentation
 
 == 3. Technology Mapping
@@ -261,11 +262,11 @@ Given the PoC stage of the project, a *complete cutover* approach is recommended
 
 **Objectives**:
 
-* Build Qt 6 from source with GPL-3 static configuration (or obtain GPL-3 pre-built)
-* Establish CMake build system with static linking
+* Install Qt 6 (GPL-3) with dynamic linking (WebEngine requires dynamic linking)
+* Establish CMake build system with dynamic linking
 * Create minimal Qt Widgets shell
 * Integrate Qt WebEngine for HTML rendering
-* Verify cross-platform static compilation
+* Verify cross-platform dynamic build and deployment
 
 **Deliverables**:
 
@@ -287,7 +288,7 @@ Given the PoC stage of the project, a *complete cutover* approach is recommended
 
 * Qt static build complexity (especially WebEngine)
 * Build system learning curve (CMake)
-* Platform-specific static linking issues
+* Platform-specific dynamic linking and deployment considerations
 
 === Phase 2: Core Services & Domain Layer (3-4 weeks)
 
@@ -451,28 +452,32 @@ cmake --build . --parallel
 # Build Qt WebEngine separately (requires more setup)
 # WebEngine has additional dependencies (Python, Node.js, etc.)
 cd qtwebengine
-# Follow Qt WebEngine build instructions for static linking
+# Follow Qt WebEngine build instructions (dynamic linking required)
 ----
 
-**Option B: Use Pre-built GPL-3 Static Qt (if available)**
+**Option B: Use Pre-built GPL-3 Qt (Recommended)**
 
-* Check Qt's official distribution channels
-* Verify GPL-3 license and static linking
-* May require custom build if not available
+* Use Qt's official distribution channels (Qt Online Installer)
+* Select GPL-3 license option
+* WebEngine requires dynamic linking (standard Qt distribution)
+* Use Qt deployment tools (`windeployqt`, `macdeployqt`, `linuxdeployqt`) to bundle runtime libraries
 
 **Platform-Specific Notes**:
 
-* *Windows*: Requires Visual Studio or MinGW; WebEngine build is complex
-* *macOS*: Requires Xcode; may need to disable code signing for static builds
-* *Linux*: Most straightforward; ensure all dependencies installed
+* *Windows*: Use `windeployqt` to bundle Qt DLLs with application
+* *macOS*: Use `macdeployqt` to create .app bundle with Qt frameworks
+* *Linux*: Use `linuxdeployqt` or manual library bundling; ensure all Qt dependencies included
 
 **Verification**:
 
 [source,bash]
 ----
-# After build, verify static linking
-ldd /opt/qt6-static/bin/qmake  # Should show minimal dependencies
-file /opt/qt6-static/bin/qmake  # Should indicate static binary
+# After installation, verify dynamic linking and WebEngine functionality
+ldd /opt/qt6/bin/qmake  # Should show Qt library dependencies (.so files)
+file /opt/qt6/bin/qmake  # Should indicate dynamic binary
+# Verify WebEngine is available
+/opt/qt6/bin/qmake -query QT_INSTALL_LIBS  # Check Qt library location
+ls /opt/qt6/lib/libQt6WebEngine*  # Verify WebEngine libraries exist
 ----
 
 === 6.2 Build System Migration
@@ -481,7 +486,7 @@ file /opt/qt6-static/bin/qmake  # Should indicate static binary
 
 **Target**: CMake + Qt build tools
 
-**CMake Structure (Static Linking)**:
+**CMake Structure (Dynamic Linking)**:
 
 [source,cmake]
 ----
@@ -491,11 +496,10 @@ project(CodexiumMagnus VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Static linking configuration
-set(BUILD_SHARED_LIBS OFF)
-set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".lib")
+# Dynamic linking configuration (WebEngine requires dynamic linking)
+set(BUILD_SHARED_LIBS ON)  # Default, but explicit for clarity
 
-# Find Qt 6 (must be built statically)
+# Find Qt 6 (must be built with dynamic linking for WebEngine)
 find_package(Qt6 REQUIRED COMPONENTS 
     Core 
     Widgets 
@@ -506,12 +510,8 @@ find_package(Qt6 REQUIRED COMPONENTS
     PrintSupport
 )
 
-# Ensure static linking
-set_target_properties(Qt6::Core Qt6::Widgets Qt6::WebEngine 
-    Qt6::WebEngineWidgets Qt6::Sql Qt6::Network Qt6::PrintSupport
-    PROPERTIES
-    INTERFACE_LINK_LIBRARIES ""
-)
+# Qt WebEngine requires dynamic linking due to Chromium licensing
+# All Qt components use dynamic linking for consistency
 
 qt6_standard_project_setup()
 
@@ -521,7 +521,7 @@ qt6_add_executable(codexium-magnus
     # ... other sources
 )
 
-# Link statically
+# Link dynamically (default for Qt)
 target_link_libraries(codexium-magnus PRIVATE
     Qt6::Core
     Qt6::Widgets
@@ -532,7 +532,7 @@ target_link_libraries(codexium-magnus PRIVATE
     Qt6::PrintSupport
 )
 
-# Platform-specific static linking flags
+# Platform-specific deployment considerations
 if(WIN32)
     set_target_properties(codexium-magnus PROPERTIES
         WIN32_EXECUTABLE TRUE
@@ -947,24 +947,24 @@ target_include_directories(codexium-magnus PRIVATE
 
 === 11.1 Immediate Actions
 
-1. **Build Qt 6 Static (GPL-3)**: Build Qt 6 from source with static configuration, or obtain GPL-3 static pre-built
-2. **POC Phase 1**: Build minimal Qt WebEngine app with static linking to validate approach
+1. **Install Qt 6 (GPL-3)**: Use pre-built Qt 6 with dynamic linking (WebEngine requires dynamic linking)
+2. **POC Phase 1**: Build minimal Qt WebEngine app with dynamic linking to validate approach
 3. **Team Training**: Schedule Qt 6 and CMake training sessions
-4. **License Verification**: Confirm Qt GPL-3 static linking compliance (already verified — proceed)
+4. **License Verification**: Confirm Qt GPL-3 dynamic linking compliance (already verified — proceed)
 5. **Select Ed25519 Library**: Choose and integrate libsodium or alternative
 
 === 11.2 Decision Points
 
-* *End of Phase 1*: Confirm Qt WebEngine static build viability, decide Widgets vs. QML
+* *End of Phase 1*: Confirm Qt WebEngine dynamic build viability, decide Widgets vs. QML
 * *End of Phase 2*: Verify C++ service layer completeness and correctness
 * *End of Phase 4*: Go/no-go decision for production release
 
 === 11.3 Long-Term Considerations
 
 * *QML Migration*: Consider QML for future phases if Widgets proves limiting
-* *Performance Optimization*: Profile and optimize C++/Qt code (static linking may improve startup time)
+* *Performance Optimization*: Profile and optimize C++/Qt code
 * *Community*: Engage Qt community for support and best practices
-* *Static Build Maintenance*: Document Qt static build process for future updates
+* *Deployment Maintenance*: Document Qt dynamic linking deployment process for future updates
 
 == 12. Appendices
 
@@ -973,7 +973,7 @@ target_include_directories(codexium-magnus PRIVATE
 * Qt 6 Documentation: https://doc.qt.io/qt-6/[Qt 6 Documentation]
 * Qt WebEngine Documentation: https://doc.qt.io/qt-6/qtwebengine-index.html[Qt WebEngine Documentation]
 * Qt Licensing (GPL-3): https://doc.qt.io/qt-6/licensing.html[Qt Licensing]
-* Qt Static Linking: https://doc.qt.io/qt-6/linux-deployment.html#static-linking[Qt Static Linking]
+* Qt Deployment: https://doc.qt.io/qt-6/deployment.html[Qt Deployment] (dynamic linking)
 * CMake with Qt: https://doc.qt.io/qt-6/cmake-get-started.html[CMake with Qt]
 * Building Qt from Source: https://doc.qt.io/qt-6/build-sources.html[Building Qt from Source]
 * libsodium (Ed25519): https://github.com/jedisct1/libsodium[libsodium]
@@ -983,7 +983,7 @@ target_include_directories(codexium-magnus PRIVATE
 **Phase 1 Checklist**:
 
 * [ ] Qt 6 built statically (GPL-3) or GPL-3 static pre-built obtained
-* [ ] CMake project structure created with static linking configuration
+* [x] CMake project structure created with dynamic linking configuration
 * [ ] Minimal MainWindow compiles and runs (static executable)
 * [ ] Qt WebEngine integrated and renders HTML
 * [ ] Cross-platform static builds working (Windows, macOS, Linux)
@@ -1036,7 +1036,7 @@ target_include_directories(codexium-magnus PRIVATE
 |2.0
 |2025-11-11
 |System
-|Updated for GPL-3 static linking and full C++/Qt migration (knife-edge cutover). Added styling strategy section (6.6).
+|Updated for GPL-3 dynamic linking (WebEngine requirement) and full C++/Qt migration (knife-edge cutover). Added styling strategy section (6.6).
 
 |1.0
 |2025-11-11

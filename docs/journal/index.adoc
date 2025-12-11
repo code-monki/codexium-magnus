@@ -1,7 +1,7 @@
 = Developer Journal Index
 :author: Codexium Magnus Development Team
 :revnumber: 1.0
-:revdate: 2025-11-11
+:revdate: 2025-12-10
 
 == Overview
 
@@ -11,7 +11,7 @@ This index provides a chronological listing of all developer journal entries wit
 
 === November
 
-* link:2025/2025-11-11.md[2025-11-11] - Qt 6 migration planning, styling strategy, documentation format decisions
+* link:2025/2025-12-10.md[2025-12-10] - Qt 6 migration planning, styling strategy, documentation format decisions
 
 == Cross-References
 

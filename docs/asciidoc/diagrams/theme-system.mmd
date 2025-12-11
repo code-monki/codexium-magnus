@@ -1,0 +1,57 @@
+graph TB
+    subgraph "Theme Sources"
+        SystemTheme[System Theme<br/>Default: Light]
+        CorpusTheme[Corpus Theme<br/>From Cartridge]
+        UserTheme[User Theme<br/>User Preferences]
+        SessionTheme[Session Theme<br/>Temporary Override]
+    end
+    
+    subgraph "Theme Manager"
+        Resolver[Composite Configuration<br/>Resolver]
+        TokenSystem[Token System<br/>CSS Variables]
+        StylesheetGen[Stylesheet Generator]
+    end
+    
+    subgraph "Theme Files"
+        LightQSS[Light Theme<br/>.qss file]
+        SepiaQSS[Sepia Theme<br/>.qss file]
+        DarkQSS[Dark Theme<br/>.qss file]
+        CustomQSS[Custom Theme<br/>.qss file]
+    end
+    
+    subgraph "Application"
+        QApp[QApplication<br/>setStyleSheet]
+        WebEngine[Qt WebEngine<br/>CSS Token Injection]
+        UI[Qt Widgets<br/>Styled UI]
+    end
+    
+    SystemTheme --> Resolver
+    CorpusTheme --> Resolver
+    UserTheme --> Resolver
+    SessionTheme --> Resolver
+    
+    Resolver --> TokenSystem
+    TokenSystem --> StylesheetGen
+    
+    StylesheetGen --> LightQSS
+    StylesheetGen --> SepiaQSS
+    StylesheetGen --> DarkQSS
+    StylesheetGen --> CustomQSS
+    
+    LightQSS --> QApp
+    SepiaQSS --> QApp
+    DarkQSS --> QApp
+    CustomQSS --> QApp
+    
+    QApp --> UI
+    TokenSystem --> WebEngine
+    
+    Resolver -.Precedence.-> SessionTheme
+    SessionTheme -.overrides.-> UserTheme
+    UserTheme -.overrides.-> CorpusTheme
+    CorpusTheme -.overrides.-> SystemTheme
+
+    style Resolver fill:#ffb74d
+    style TokenSystem fill:#ffb74d
+    style QApp fill:#4fc3f7
+    style WebEngine fill:#4fc3f7

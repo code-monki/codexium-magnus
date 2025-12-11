@@ -1,0 +1,56 @@
+graph TB
+    subgraph "Presentation Layer"
+        UI[Qt Widgets UI<br/>MainWindow, Panes]
+    end
+    
+    subgraph "Integration Layer"
+        WebEngine[Qt WebEngine<br/>HTML Renderer]
+        Bridge[WebEngineBridge<br/>C++ ↔ JavaScript]
+    end
+    
+    subgraph "Application Layer"
+        Nav[Navigation Service]
+        Search[Search Service]
+        Theme[Theme Manager]
+        Link[Link Service]
+        Print[Print Service]
+    end
+    
+    subgraph "Domain Layer"
+        Cartridge[Cartridge Service<br/>SQLite Reader]
+        Content[Content Provider]
+        Schema[Schema Adapter]
+    end
+    
+    subgraph "Infrastructure Layer"
+        SQLite[(SQLite Database<br/>FTS5)]
+        FileIO[File I/O]
+        KeyStore[Key Store<br/>Ed25519]
+        Logging[Logging]
+    end
+    
+    UI --> WebEngine
+    UI --> Nav
+    UI --> Search
+    UI --> Theme
+    WebEngine --> Bridge
+    Bridge --> Link
+    Bridge --> Print
+    Nav --> Cartridge
+    Search --> Cartridge
+    Cartridge --> SQLite
+    Cartridge --> Content
+    Content --> Schema
+    Cartridge --> KeyStore
+    Theme --> FileIO
+    Cartridge --> FileIO
+    Nav --> Logging
+    Search --> Logging
+
+    style UI fill:#e1f5ff
+    style WebEngine fill:#e1f5ff
+    style Nav fill:#fff4e1
+    style Search fill:#fff4e1
+    style Theme fill:#fff4e1
+    style Cartridge fill:#e8f5e9
+    style SQLite fill:#f3e5f5

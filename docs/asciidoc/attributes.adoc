@@ -30,4 +30,4 @@
 :ui-framework: Qt 6 (Widgets + WebEngine)
 :language: C++17/20
 :build-system: CMake
-:license-type: GPL-3.0 (static linking)
+:license-type: GPL-3.0 (dynamic linking - WebEngine requirement)

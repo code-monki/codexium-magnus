@@ -300,13 +300,15 @@ The guiding principle is *stable core, pluggable content*: viewer code changes i
 
 * Introduce a dedicated *Print Service*.
 * Support *two* print paths:
-  1. *Visible-print path* — for small/medium documents
-     * Qt WebEngine prints current view
-     * Viewer invokes OS print dialog (`QPrintDialog`)
-  2. *Off-screen/print-surface path* — for long/complex documents
-     * Create hidden Qt WebEngine view
-     * Ask Qt WebEngine to render/`printToPdf`
-     * Hand resulting PDF to OS print dialog
++
+. *Visible-print path* — for small/medium documents
+  * Qt WebEngine prints current view
+  * Viewer invokes OS print dialog (`QPrintDialog`)
++
+. *Off-screen/print-surface path* — for long/complex documents
+  * Create hidden Qt WebEngine view
+  * Ask Qt WebEngine to render/`printToPdf`
+  * Hand resulting PDF to OS print dialog
 
 **Flow**
 

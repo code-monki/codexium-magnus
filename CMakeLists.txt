@@ -24,6 +24,42 @@ find_package(Qt6 REQUIRED COMPONENTS
     Network
 )
 
+# Find libsodium for Ed25519 signature verification (optional but recommended)
+find_package(PkgConfig QUIET)
+if(PkgConfig_FOUND)
+    pkg_check_modules(LIBSODIUM QUIET libsodium)
+endif()
+
+# If pkg-config didn't find it, try find_library as fallback
+if(NOT LIBSODIUM_FOUND)
+    find_library(LIBSODIUM_LIBRARIES
+        NAMES sodium libsodium
+        PATHS
+            /opt/homebrew/lib
+            /usr/local/lib
+            /usr/lib
+    )
+    find_path(LIBSODIUM_INCLUDE_DIRS
+        NAMES sodium.h
+        PATHS
+            /opt/homebrew/include
+            /usr/local/include
+            /usr/include
+    )
+    if(LIBSODIUM_LIBRARIES AND LIBSODIUM_INCLUDE_DIRS)
+        set(LIBSODIUM_FOUND TRUE)
+        set(LIBSODIUM_LIBRARY_DIRS "")
+    endif()
+endif()
+
+if(LIBSODIUM_FOUND)
+    message(STATUS "libsodium found: ${LIBSODIUM_LIBRARIES}")
+    add_definitions(-DHAVE_LIBSODIUM)
+else()
+    message(WARNING "libsodium not found - signature verification will be disabled")
+    message(WARNING "Install with: brew install libsodium (macOS) or equivalent for your platform")
+endif()
+
 # Enable Qt MOC, UIC, RCC
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -41,4 +77,5 @@ if(BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests/codexium-magnus-core-tests)
     add_subdirectory(tests/codexium-magnus-storage-tests)
+    add_subdirectory(tests/codexium-magnus-tests)
 endif()

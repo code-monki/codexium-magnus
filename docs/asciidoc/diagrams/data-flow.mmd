@@ -1,0 +1,36 @@
+sequenceDiagram
+    participant User
+    participant MainWindow
+    participant CartridgeService
+    participant SearchService
+    participant WebEngine
+    participant SQLite
+    
+    User->>MainWindow: Open Cartridge
+    MainWindow->>CartridgeService: openCartridge(path)
+    CartridgeService->>SQLite: Open Database
+    SQLite-->>CartridgeService: Database Handle
+    CartridgeService->>SQLite: Read Manifest
+    SQLite-->>CartridgeService: Manifest Data
+    CartridgeService-->>MainWindow: Cartridge Handle
+    MainWindow->>CartridgeService: getDocument(id)
+    CartridgeService->>SQLite: Query Document
+    SQLite-->>CartridgeService: HTML Content
+    CartridgeService-->>MainWindow: Document Content
+    MainWindow->>WebEngine: loadHtml(content)
+    WebEngine-->>User: Display Document
+    
+    User->>MainWindow: Search Query
+    MainWindow->>SearchService: search(query, filters)
+    SearchService->>SQLite: FTS5 Query
+    SQLite-->>SearchService: Search Results
+    SearchService-->>MainWindow: Results List
+    MainWindow-->>User: Display Results
+    
+    User->>MainWindow: Click Result
+    MainWindow->>CartridgeService: getDocument(id)
+    CartridgeService->>SQLite: Query Document
+    SQLite-->>CartridgeService: HTML Content
+    CartridgeService-->>MainWindow: Document Content
+    MainWindow->>WebEngine: loadHtml(content)
+    WebEngine-->>User: Display Document

@@ -1,0 +1,63 @@
+graph LR
+    subgraph "Viewer Shell"
+        MainWindow[MainWindow<br/>Qt Widgets]
+        NavPane[Navigation Pane<br/>QTreeView]
+        SearchPane[Search Pane<br/>QLineEdit + Results]
+        DocView[Document View<br/>QWebEngineView]
+    end
+    
+    subgraph "Services"
+        CartridgeSvc[CartridgeService<br/>ICartridgeService]
+        SearchSvc[SearchService<br/>ISearchService]
+        LinkSvc[LinkService<br/>ILinkService]
+        PrintSvc[PrintService<br/>IPrintService]
+        ThemeMgr[ThemeManager]
+    end
+    
+    subgraph "Core Library"
+        Config[Configuration<br/>CompositeResolver]
+        Models[Models<br/>Typography, Bibliography]
+        Reports[Reporting<br/>ReportWriter]
+    end
+    
+    subgraph "Storage"
+        DBInit[DbInitializer<br/>SQLite Setup]
+    end
+    
+    subgraph "External"
+        SQLite[(SQLite<br/>Cartridge DB)]
+        Browser[System Browser<br/>QDesktopServices]
+        Printer[Print System<br/>QPrintDialog]
+    end
+    
+    MainWindow --> NavPane
+    MainWindow --> SearchPane
+    MainWindow --> DocView
+    MainWindow --> CartridgeSvc
+    MainWindow --> SearchSvc
+    MainWindow --> LinkSvc
+    MainWindow --> PrintSvc
+    MainWindow --> ThemeMgr
+    
+    NavPane --> CartridgeSvc
+    SearchPane --> SearchSvc
+    DocView --> LinkSvc
+    DocView --> PrintSvc
+    
+    CartridgeSvc --> SQLite
+    SearchSvc --> SQLite
+    CartridgeSvc --> DBInit
+    SearchSvc --> DBInit
+    
+    LinkSvc --> Browser
+    PrintSvc --> Printer
+    
+    CartridgeSvc --> Config
+    ThemeMgr --> Config
+    Config --> Models
+    CartridgeSvc --> Reports
+
+    style MainWindow fill:#4fc3f7
+    style CartridgeSvc fill:#81c784
+    style SearchSvc fill:#81c784
+    style SQLite fill:#ba68c8

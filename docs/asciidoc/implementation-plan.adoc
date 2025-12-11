@@ -10,7 +10,7 @@ include::attributes.adoc[]
 1. Implement the application in the same structure as the Detailed Design v1.2.
 2. Use C++17/20 as the primary language with Qt 6 framework.
 3. Introduce Node.js only for Qt WebEngine/Playwright DOM testing (Chrome DevTools Protocol).
-4. Deliver a baseline that can run without external dependencies (static linking).
+4. Deliver a baseline with Qt runtime libraries (dynamic linking required for WebEngine).
 5. Make reporting, not UI, the single source of truth for build/test/sanity output.
 
 == 2. Assumptions
@@ -20,7 +20,7 @@ include::attributes.adoc[]
 * Config resolution order is fixed: Session → User Profile → Corpus → System.
 * All scripts/tools/tests should emit in (or be convertible to) the shared report format defined in DD §5.
 * UI spec is TBD; implementation stubs MAY expose placeholder controls.
-* Qt 6 is statically linked under GPL-3.
+* Qt 6 is dynamically linked under GPL-3 (WebEngine requires dynamic linking due to Chromium licensing).
 
 == 3. Phase Overview
 
@@ -213,7 +213,7 @@ include::attributes.adoc[]
 7. ThemeManager implementation
 8. Qt Test projects
 9. Playwright/Chrome DevTools Protocol tests
-10. Packaging/build targets (CMake, static linking)
+10. Packaging/build targets (CMake, dynamic linking - WebEngine requirement)
 
 == 10. Dev Notes / Guardrails
 
@@ -224,7 +224,7 @@ include::attributes.adoc[]
 5. Keep core rules in C++, not browser JS.
 6. Test where it lives.
 7. Keep path abstraction for local/shared cartridges.
-8. Static linking under GPL-3 for all Qt components.
+8. Dynamic linking under GPL-3 for all Qt components (WebEngine requires dynamic linking due to Chromium licensing).
 
 == 11. Development Environment Setup
 
@@ -232,7 +232,7 @@ include::attributes.adoc[]
 
 === Prerequisites
 
-* Qt 6 SDK (static build, GPL-3) or build from source
+* Qt 6 SDK (dynamic build, GPL-3) - WebEngine requires dynamic linking
 * CMake 3.20+
 * C++17 compiler (GCC, Clang, MSVC)
 * Node.js (current LTS) for Playwright/Qt WebEngine tests
@@ -249,7 +249,7 @@ include::attributes.adoc[]
 === Qt Creator Setup
 
 1. Open CMakeLists.txt as project
-2. Configure build with static linking
+2. Configure build with dynamic linking (default - WebEngine requires dynamic linking)
 3. Set up run configurations
 4. Configure Qt Test integration
 

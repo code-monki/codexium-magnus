@@ -1,0 +1,30 @@
+sequenceDiagram
+    participant User
+    participant MainWindow
+    participant PrintService
+    participant WebEngine
+    participant System
+    
+    User->>MainWindow: Print Command
+    MainWindow->>PrintService: printContent(html)
+    PrintService->>WebEngine: setHtml(html)
+    WebEngine->>WebEngine: Load Content
+    WebEngine-->>PrintService: loadFinished(true)
+    
+    alt Print to PDF
+        PrintService->>WebEngine: printToPdf(path, layout)
+        WebEngine->>WebEngine: Render PDF
+        WebEngine-->>PrintService: pdfPrintingFinished(path, true)
+        PrintService-->>MainWindow: printCompleted()
+        MainWindow-->>User: PDF Saved
+    else Print to Physical Printer
+        PrintService->>WebEngine: printToPdf(tempPath, layout)
+        WebEngine->>WebEngine: Render PDF
+        WebEngine-->>PrintService: pdfPrintingFinished(tempPath, true)
+        PrintService->>System: QDesktopServices::openUrl(pdf)
+        System->>System: Open Print Dialog
+        System-->>User: Print Dialog
+        User->>System: Print
+        System-->>PrintService: Print Complete
+        PrintService-->>MainWindow: printCompleted()
+    end
