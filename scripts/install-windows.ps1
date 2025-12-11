@@ -350,24 +350,36 @@ if ($qtPath) {
     }
 }
 
-# Check for libsodium (optional)
+# Check for libsodium (optional - only needed for signature verification)
 if (-not $SkipLibsodium) {
     $libsodiumFound = $false
     
-    # Check vcpkg
+    # Check if libsodium is installed via vcpkg
     if (Test-Command "vcpkg") {
-        $libsodiumFound = $true
-        Write-Host "[OK] vcpkg found (libsodium can be installed via vcpkg)" -ForegroundColor Green
-    } else {
-        # Check if libsodium is in common locations
+        try {
+            $vcpkgList = vcpkg list libsodium 2>&1
+            if ($vcpkgList -match "libsodium") {
+                $libsodiumFound = $true
+                Write-Host "[OK] libsodium found (installed via vcpkg)" -ForegroundColor Green
+            } else {
+                Write-Host "[INFO] vcpkg found, but libsodium is not installed" -ForegroundColor Gray
+            }
+        } catch {
+            Write-Host "[INFO] Could not check vcpkg for libsodium" -ForegroundColor Gray
+        }
+    }
+    
+    # Check if libsodium is in common installation locations
+    if (-not $libsodiumFound) {
         $possiblePaths = @(
             "$env:ProgramFiles\libsodium",
             "$env:ProgramFiles(x86)\libsodium",
-            "$env:USERPROFILE\libsodium"
+            "$env:USERPROFILE\libsodium",
+            "$env:VCPKG_ROOT\installed\x64-windows\include\sodium"
         )
         
         foreach ($path in $possiblePaths) {
-            if (Test-Directory $path) {
+            if (Test-Path $path) {
                 $libsodiumFound = $true
                 Write-Host "[OK] libsodium found at: $path" -ForegroundColor Green
                 break
@@ -376,12 +388,20 @@ if (-not $SkipLibsodium) {
     }
     
     if (-not $libsodiumFound) {
-        Write-Host "[WARN] libsodium not found (optional, for signature verification)" -ForegroundColor Yellow
-        Write-Host "  Install via vcpkg: vcpkg install libsodium:x64-windows" -ForegroundColor Yellow
-        Write-Host "  Or download from: https://download.libsodium.org/libsodium/releases/" -ForegroundColor Yellow
+        Write-Host "[INFO] libsodium not found (optional dependency)" -ForegroundColor Cyan
+        Write-Host "  Note: libsodium is only needed for signature verification features." -ForegroundColor Gray
+        Write-Host "  The application will work without it, but signature verification will be disabled." -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "  To install libsodium (optional):" -ForegroundColor Yellow
+        if (Test-Command "vcpkg") {
+            Write-Host "    vcpkg install libsodium:x64-windows" -ForegroundColor White
+        } else {
+            Write-Host "    Install vcpkg, then run: vcpkg install libsodium:x64-windows" -ForegroundColor White
+            Write-Host "    Or download from: https://download.libsodium.org/libsodium/releases/" -ForegroundColor White
+        }
     }
 } else {
-    Write-Host "[WARN] libsodium check skipped" -ForegroundColor Yellow
+    Write-Host "[INFO] libsodium check skipped" -ForegroundColor Cyan
 }
 
 Write-Host ""
