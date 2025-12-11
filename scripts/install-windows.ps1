@@ -6,6 +6,7 @@ param(
     [switch]$SkipCMake,
     [switch]$SkipCompiler,
     [switch]$SkipLibsodium,
+    [switch]$InstallQt,
     [string]$QtVersion = "6.9.3",
     [string]$QtInstallPath = "$env:USERPROFILE\Qt",
     [string]$Compiler = "msvc2019_64"
@@ -53,6 +54,97 @@ function Find-QtInstallation {
     }
     
     return $null
+}
+
+# Function to get Qt component identifier
+function Get-QtComponentId {
+    param([string]$Version, [string]$Compiler)
+    
+    # Map compiler names to Qt component identifiers
+    $compilerMap = @{
+        "msvc2019_64" = "msvc2019_64"
+        "msvc2022_64" = "msvc2022_64"
+        "mingw_64" = "mingw_64"
+    }
+    
+    $compilerId = $compilerMap[$Compiler]
+    if (-not $compilerId) {
+        $compilerId = $Compiler
+    }
+    
+    # Convert version to component format (e.g., "6.9.3" -> "qt.qt6.6903")
+    $versionParts = $Version.Split('.')
+    $major = $versionParts[0]
+    $minor = $versionParts[1]
+    $patch = $versionParts[2]
+    $versionId = "$major$minor$patch"
+    
+    return "qt.qt6.$versionId.win64_$compilerId"
+}
+
+# Function to install Qt automatically
+function Install-Qt {
+    param(
+        [string]$Version,
+        [string]$InstallPath,
+        [string]$Compiler
+    )
+    
+    Write-Host "Downloading Qt Online Installer..." -ForegroundColor Yellow
+    
+    $installerUrl = "https://download.qt.io/official_releases/online_installers/qt-unified-windows-x64-online.exe"
+    $installerPath = Join-Path $env:TEMP "qt-unified-windows-x64-online.exe"
+    
+    try {
+        # Download installer
+        Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath -UseBasicParsing
+        Write-Host "✓ Download complete" -ForegroundColor Green
+    } catch {
+        Write-Host "✗ Failed to download Qt installer: $_" -ForegroundColor Red
+        return $false
+    }
+    
+    Write-Host ""
+    Write-Host "Installing Qt $Version..." -ForegroundColor Yellow
+    Write-Host "This may take 10-30 minutes depending on your internet connection." -ForegroundColor Gray
+    Write-Host ""
+    
+    # Get component identifier
+    $componentId = Get-QtComponentId -Version $Version -Compiler $Compiler
+    $webEngineComponent = "qt.qt6.$($Version.Replace('.','')).win64_$Compiler.qtwebengine"
+    
+    # Build installer arguments
+    $installArgs = @(
+        "--root", $InstallPath,
+        "--accept-licenses",
+        "--accept-messages",
+        "--confirm-command",
+        "install",
+        $componentId,
+        $webEngineComponent
+    )
+    
+    try {
+        # Run installer
+        $process = Start-Process -FilePath $installerPath -ArgumentList $installArgs -Wait -PassThru -NoNewWindow
+        
+        if ($process.ExitCode -eq 0) {
+            Write-Host "✓ Qt installation completed successfully" -ForegroundColor Green
+            
+            # Clean up installer
+            Remove-Item -Path $installerPath -Force -ErrorAction SilentlyContinue
+            
+            return $true
+        } else {
+            Write-Host "✗ Qt installation failed with exit code: $($process.ExitCode)" -ForegroundColor Red
+            Write-Host "You may need to run the installer manually." -ForegroundColor Yellow
+            return $false
+        }
+    } catch {
+        Write-Host "✗ Failed to run Qt installer: $_" -ForegroundColor Red
+        Write-Host "You may need to run the installer manually: $installerPath" -ForegroundColor Yellow
+        return $false
+    }
 }
 
 Write-Host "Checking prerequisites..." -ForegroundColor Yellow
@@ -153,20 +245,66 @@ if (-not $qtPath -and -not $SkipQt) {
     Write-Host ""
     Write-Host "Qt $QtVersion not found." -ForegroundColor Yellow
     Write-Host ""
-    Write-Host "Qt installation options:" -ForegroundColor Cyan
-    Write-Host "1. Download Qt Online Installer: https://www.qt.io/download-open-source" -ForegroundColor White
-    Write-Host "2. Install Qt $QtVersion with $Compiler components" -ForegroundColor White
-    Write-Host "3. Install Qt WebEngine component (required)" -ForegroundColor White
-    Write-Host ""
-    Write-Host "After installation, run this script again or set Qt6_DIR manually:" -ForegroundColor Yellow
-    Write-Host "  `$env:Qt6_DIR = `"$QtInstallPath\$QtVersion\$Compiler\lib\cmake\Qt6`"" -ForegroundColor White
-    Write-Host ""
     
-    $response = Read-Host "Continue anyway? (y/N)"
-    if ($response -ne "y" -and $response -ne "Y") {
-        exit 1
+    if ($InstallQt) {
+        # Automatic installation requested
+        Write-Host "Automatic Qt installation requested..." -ForegroundColor Cyan
+        $installSuccess = Install-Qt -Version $QtVersion -InstallPath $QtInstallPath -Compiler $Compiler
+        
+        if ($installSuccess) {
+            # Verify installation
+            $qtPath = Find-QtInstallation -Version $QtVersion -Compiler $Compiler
+            if (-not $qtPath) {
+                Write-Host "⚠ Qt installed but not found. You may need to restart your terminal." -ForegroundColor Yellow
+            }
+        } else {
+            Write-Host ""
+            Write-Host "Automatic installation failed. Please install Qt manually:" -ForegroundColor Yellow
+            Write-Host "1. Download Qt Online Installer: https://www.qt.io/download-open-source" -ForegroundColor White
+            Write-Host "2. Install Qt $QtVersion with $Compiler components" -ForegroundColor White
+            Write-Host "3. Install Qt WebEngine component (required)" -ForegroundColor White
+            Write-Host ""
+            $response = Read-Host "Continue anyway? (y/N)"
+            if ($response -ne "y" -and $response -ne "Y") {
+                exit 1
+            }
+        }
+    } else {
+        # Manual installation instructions
+        Write-Host "Qt installation options:" -ForegroundColor Cyan
+        Write-Host "1. Automatic installation (recommended):" -ForegroundColor White
+        Write-Host "   .\scripts\install-windows.ps1 -InstallQt" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "2. Manual installation:" -ForegroundColor White
+        Write-Host "   - Download Qt Online Installer: https://www.qt.io/download-open-source" -ForegroundColor Gray
+        Write-Host "   - Install Qt $QtVersion with $Compiler components" -ForegroundColor Gray
+        Write-Host "   - Install Qt WebEngine component (required)" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "After installation, run this script again or set Qt6_DIR manually:" -ForegroundColor Yellow
+        Write-Host "  `$env:Qt6_DIR = `"$QtInstallPath\$QtVersion\$Compiler\lib\cmake\Qt6`"" -ForegroundColor White
+        Write-Host ""
+        
+        $response = Read-Host "Would you like to install Qt automatically now? (Y/n)"
+        if ($response -ne "n" -and $response -ne "N") {
+            $installSuccess = Install-Qt -Version $QtVersion -InstallPath $QtInstallPath -Compiler $Compiler
+            if ($installSuccess) {
+                $qtPath = Find-QtInstallation -Version $QtVersion -Compiler $Compiler
+            } else {
+                $response = Read-Host "Continue anyway? (y/N)"
+                if ($response -ne "y" -and $response -ne "Y") {
+                    exit 1
+                }
+            }
+        } else {
+            $response = Read-Host "Continue without Qt? (y/N)"
+            if ($response -ne "y" -and $response -ne "Y") {
+                exit 1
+            }
+        }
     }
-} elseif ($qtPath) {
+}
+
+if ($qtPath) {
     $qt6Dir = Join-Path $qtPath "lib\cmake\Qt6"
     Write-Host "✓ Qt found at: $qtPath" -ForegroundColor Green
     

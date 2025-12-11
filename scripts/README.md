@@ -13,6 +13,7 @@ Installs dependencies and sets up the development environment.
 ```
 
 **Options:**
+- `-InstallQt` - Automatically download and install Qt (interactive)
 - `-SkipQt` - Skip Qt installation check
 - `-SkipCMake` - Skip CMake installation check
 - `-SkipCompiler` - Skip compiler check
@@ -24,9 +25,17 @@ Installs dependencies and sets up the development environment.
 **Features:**
 - Checks for Git, CMake, C++ compiler, Qt, and libsodium
 - Attempts to install CMake via winget or Chocolatey (if available)
+- **Can automatically download and install Qt** (with `-InstallQt` flag or when prompted)
 - Finds Qt installation automatically
 - Sets Qt6_DIR environment variable
 - Provides clear next steps
+
+**Qt Installation:**
+- The script can automatically download and install Qt using the Qt Online Installer
+- Use `-InstallQt` flag to force automatic installation
+- Or the script will prompt you if Qt is not found
+- Installation takes 10-30 minutes depending on internet speed
+- Requires accepting Qt's open source license
 
 ### `configure-windows.ps1`
 Configures the CMake build system.
