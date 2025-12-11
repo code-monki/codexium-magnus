@@ -166,24 +166,34 @@ if (-not $cmakeFound -and -not $SkipCMake) {
     # Try winget first (Windows 10/11)
     if (Test-Command "winget") {
         Write-Host "Installing CMake via winget..." -ForegroundColor Yellow
-        winget install -e --id Kitware.CMake --silent
-        if ($LASTEXITCODE -eq 0) {
+        Write-Host "This may take several minutes. Please wait..." -ForegroundColor Gray
+        $wingetProcess = Start-Process -FilePath "winget" -ArgumentList "install", "-e", "--id", "Kitware.CMake", "--accept-package-agreements", "--accept-source-agreements" -Wait -PassThru -NoNewWindow
+        if ($wingetProcess.ExitCode -eq 0) {
+            Write-Host "CMake installation completed. Refreshing PATH..." -ForegroundColor Green
             $machinePath = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
             $userPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
             $env:Path = $machinePath + ";" + $userPath
             $cmakeFound = Test-Command "cmake"
+        } else {
+            Write-Host "WARNING: winget installation returned exit code: $($wingetProcess.ExitCode)" -ForegroundColor Yellow
         }
     }
     
     # Try Chocolatey if winget failed
     if (-not $cmakeFound -and (Test-Command "choco")) {
         Write-Host "Installing CMake via Chocolatey..." -ForegroundColor Yellow
+        Write-Host "This may take several minutes. Please wait..." -ForegroundColor Gray
         if ($isAdmin) {
-            choco install cmake -y
-            $machinePath = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
-            $userPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
-            $env:Path = $machinePath + ";" + $userPath
-            $cmakeFound = Test-Command "cmake"
+            $chocoProcess = Start-Process -FilePath "choco" -ArgumentList "install", "cmake", "-y" -Wait -PassThru -NoNewWindow
+            if ($chocoProcess.ExitCode -eq 0) {
+                Write-Host "CMake installation completed. Refreshing PATH..." -ForegroundColor Green
+                $machinePath = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
+                $userPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
+                $env:Path = $machinePath + ";" + $userPath
+                $cmakeFound = Test-Command "cmake"
+            } else {
+                Write-Host "WARNING: Chocolatey installation returned exit code: $($chocoProcess.ExitCode)" -ForegroundColor Yellow
+            }
         } else {
             Write-Host "WARNING: Administrator privileges required for Chocolatey installation." -ForegroundColor Yellow
             Write-Host "Please run this script as Administrator or install CMake manually." -ForegroundColor Yellow
