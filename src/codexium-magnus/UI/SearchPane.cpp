@@ -59,6 +59,7 @@ void SearchPane::setupUi() {
 
     // Results list
     m_resultsList = new QListView(this);
+    m_resultsList->setAlternatingRowColors(true);  // Enable zebra striping
     m_resultsModel = new QStandardItemModel(this);
     m_resultsList->setModel(m_resultsModel);
     connect(m_resultsList, &QListView::clicked, this, &SearchPane::onResultClicked);

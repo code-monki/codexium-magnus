@@ -49,7 +49,7 @@ signals:
 private:
     void loadDefaultTheme(Theme theme);
     void loadThemeTokens(Theme theme);
-    void applyTokensToStylesheet(QString& stylesheet);
+    void applyTokensToStylesheet(QString& stylesheet) const;
     QString getThemeStylesheetPath(Theme theme) const;
     QString generateDefaultStylesheet(Theme theme) const;
 

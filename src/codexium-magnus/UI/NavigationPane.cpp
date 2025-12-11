@@ -21,8 +21,9 @@ NavigationPane::NavigationPane(QWidget *parent)
     m_treeView = new QTreeView(this);
     m_treeView->setHeaderHidden(true);
     m_treeView->setRootIsDecorated(true);
-    m_treeView->setAlternatingRowColors(true);
+    m_treeView->setAlternatingRowColors(true);  // Enable zebra striping
     m_treeView->setAnimated(true);
+    m_treeView->setIndentation(12);
     
     m_model = new QStandardItemModel(this);
     m_treeView->setModel(m_model);
